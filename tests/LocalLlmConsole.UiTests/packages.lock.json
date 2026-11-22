@@ -204,12 +204,16 @@
       "LlamaCppWindowsManager": {
         "type": "Project",
         "dependencies": {
+          "LocalLLMManager.Guard.Contracts": "[1.0.0, )",
           "LocalLlmConsole.Core": "[1.0.0, )",
           "Microsoft.Data.Sqlite": "[10.0.15, )",
           "SQLitePCLRaw.bundle_e_sqlite3": "[3.0.5, )"
         }
       },
       "localllmconsole.core": {
+        "type": "Project"
+      },
+      "localllmmanager.guard.contracts": {
         "type": "Project"
       }
     }

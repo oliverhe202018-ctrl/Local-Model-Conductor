@@ -38,6 +38,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\LocalLlmConsole.Core\LocalLlmConsole.Core.csproj" />
+    <ProjectReference Include="..\..\..\..\phase4a_guard\src\LocalLLMManager.Guard.Contracts\LocalLLMManager.Guard.Contracts.csproj" />
   </ItemGroup>
 
   <ItemGroup>

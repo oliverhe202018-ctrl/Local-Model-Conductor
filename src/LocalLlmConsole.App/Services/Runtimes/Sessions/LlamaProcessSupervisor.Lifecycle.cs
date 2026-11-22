@@ -15,6 +15,9 @@ public sealed partial class LlamaProcessSupervisor
 
     public async Task<StopVerification> StopVerifiedAsync(CancellationToken cancellationToken = default)
     {
+        if (ExternalExecutionPolicy.IsExternalLlamaSwapMode && (_process is not null || _attached || _lastSettings is not null))
+            throw new NativeProcessControlBlockedException("LlamaProcessSupervisor.StopVerifiedAsync");
+
         var verified = true;
         var error = "";
         if (_lastRuntimeMode == RuntimeMode.Native)

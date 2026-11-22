@@ -68,6 +68,7 @@ public sealed partial class LlamaProcessSupervisor : IDisposable, IAsyncDisposab
 
     public async Task StartAsync(RuntimeRecord runtime, ModelRecord model, AppSettings settings, string logRoot)
     {
+        ExternalExecutionPolicy.ThrowIfNativeProcessControlBlocked("LlamaProcessSupervisor.StartAsync");
         RuntimeAvailabilityService.EnsureAvailable(runtime);
         if (RuntimeModelAliasService.ReadAliases(settings.CustomParameters).Count == 0)
             settings = RuntimeDirectAliasService.ForLaunch(settings, model.ModelPath, []);

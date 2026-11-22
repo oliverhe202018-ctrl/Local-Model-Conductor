@@ -11,6 +11,12 @@ public partial class App : System.Windows.Application
 
     protected override void OnStartup(StartupEventArgs e)
     {
+        // Phase 4B-1 P0: Irrevocably lock the desktop application into ExternalLlamaSwap mode.
+        ExternalExecutionPolicy.LockExternalLlamaSwapForRuntime();
+        var guardOptions = GuardBackendOptions.Configure(e.Args);
+        if (!string.IsNullOrWhiteSpace(guardOptions.WorkspaceOverride))
+            Environment.SetEnvironmentVariable(WorkspaceRootResolver.EnvironmentVariable, guardOptions.WorkspaceOverride);
+
         if (e.Args.Contains("--bootstrap-agent-sidecars-only", StringComparer.OrdinalIgnoreCase))
         {
             var sidecars = new AgentSidecarBootstrapService().InstallPackaged(
@@ -23,7 +29,10 @@ public partial class App : System.Windows.Application
             return;
         }
 
-        if (!_singleInstance.TryAcquire(SingleInstanceMutexName))
+        var skipSingleInstance = !string.IsNullOrWhiteSpace(guardOptions.ScreenshotOutputDirectory)
+            || e.Args.Contains("--isolated-instance", StringComparer.OrdinalIgnoreCase);
+
+        if (!skipSingleInstance && !_singleInstance.TryAcquire(SingleInstanceMutexName))
         {
             _dialogs.Notify(null, "llama.cpp Windows Manager is already running.", "llama.cpp Windows Manager", MessageBoxImage.Information);
             Shutdown();
@@ -32,8 +41,24 @@ public partial class App : System.Windows.Application
 
         base.OnStartup(e);
         var window = new MainWindow();
+        if (!string.IsNullOrWhiteSpace(guardOptions.ScreenshotOutputDirectory))
+        {
+            window.ShowInTaskbar = false;
+            window.Loaded += async (_, _) =>
+            {
+                try
+                {
+                    await window.CaptureGuardWorkbenchScreenshotsAsync(guardOptions.ScreenshotOutputDirectory!);
+                }
+                finally
+                {
+                    Shutdown(0);
+                }
+            };
+        }
         window.Show();
-        _ = BootstrapPackagedSidecarsAsync();
+        if (!skipSingleInstance)
+            _ = BootstrapPackagedSidecarsAsync();
     }
 
     private static async Task BootstrapPackagedSidecarsAsync()

@@ -4,6 +4,7 @@ public sealed partial class LlamaProcessSupervisor
 {
     public void AttachExisting(RuntimeRecord runtime, string modelId, AppSettings settings, string logPath, LlamaRuntimeState state = LlamaRuntimeState.Loaded, string processMarker = "", int processId = 0)
     {
+        ExternalExecutionPolicy.ThrowIfNativeProcessControlBlocked("LlamaProcessSupervisor.AttachExisting");
         Stop();
         ActiveModelId = modelId;
         ActiveRuntimeId = runtime.Id;

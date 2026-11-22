@@ -24,6 +24,8 @@ public partial class MainWindow
         bool selectLoadedOverviewModel = true,
         bool restoreForInteractivePrompts = false)
     {
+        if (ExternalExecutionPolicy.IsExternalLlamaSwapMode) { await EnsureGuardCenter().SwitchProfileAsync(ModelGatewayRouteId.SafeSegment(model.Name)); return true; }
+
         var result = await _coreServices.Models.ModelRuntimeLaunchApplication.LaunchAsync(
             new ModelRuntimeLaunchApplicationRequest(
                 runtime,
@@ -189,6 +191,8 @@ public partial class MainWindow
 
     private async Task StopModelRuntimeAsync(ModelRecord model)
     {
+        if (ExternalExecutionPolicy.IsExternalLlamaSwapMode) { await EnsureGuardCenter().UnloadAsync(); return; }
+
         var stoppedSession = _sessions.SessionForModel(model.Id);
         await _coreServices.Runtime.RuntimeSessionApplication.StopModelAsync(
             new RuntimeSessionStopModelApplicationRequest(

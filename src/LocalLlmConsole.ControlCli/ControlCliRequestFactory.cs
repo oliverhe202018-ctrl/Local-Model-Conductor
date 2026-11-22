@@ -46,7 +46,7 @@ internal static partial class ControlCliRequestFactory
         => action switch
         {
             "list" => Get("/api/v1/models"),
-            "get" => Get($"/api/v1/models/{Segment(ModelArg(args, 2))}"),
+            "get" or "inspect" => Get($"/api/v1/models/{Segment(ModelArg(args, 2))}"),
             "scan" => Post("/api/v1/models/scan"),
             "import" => ModelImportRequest(args),
             "reattach" => ModelReattachRequest(args),
@@ -211,7 +211,7 @@ internal static partial class ControlCliRequestFactory
     private static ControlRequest RuntimeRequest(string action, Arguments args)
         => action switch
         {
-            "list" => Get("/api/v1/runtimes"),
+            "list" or "inspect" => Get("/api/v1/runtimes"),
             "scan" => Post("/api/v1/runtimes/scan"),
             "register" => Post("/api/v1/runtimes/register", new JsonObject { ["folder"] = Required(args, "folder") }),
             _ => throw new InvalidOperationException($"Unknown runtime action '{action}'.")

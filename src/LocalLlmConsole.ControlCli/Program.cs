@@ -16,6 +16,9 @@ internal static class Program
                 return 0;
             }
 
+            if (ControlCliGuardDispatcher.TryResolveGuardOperation(command, out var guardOp))
+                return await ControlCliGuardDispatcher.ExecuteAsync(command, guardOp);
+
             var connection = ControlCliDiscovery.Discover(command);
             using var http = new HttpClient
             {

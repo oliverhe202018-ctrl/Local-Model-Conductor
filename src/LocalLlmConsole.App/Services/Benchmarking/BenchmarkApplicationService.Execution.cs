@@ -12,6 +12,7 @@ public sealed partial class BenchmarkApplicationService
         LoadedModelSessionManager.BenchmarkSessionLease computeLease,
         CancellationToken cancellationToken)
     {
+        ExternalExecutionPolicy.ThrowIfNativeProcessControlBlocked("BenchmarkApplicationService.ExecuteWorkItemAsync");
         var runtime = (await _store.ListRuntimesAsync()).FirstOrDefault(runtime => runtime.Id.Equals(item.RuntimeId, StringComparison.OrdinalIgnoreCase))
             ?? throw new InvalidOperationException($"Runtime '{item.RuntimeId}' is no longer registered.");
         if (item.ExecutionMode == BenchmarkExecutionMode.ProfileServing)
@@ -76,6 +77,7 @@ public sealed partial class BenchmarkApplicationService
         LoadedModelSessionManager.BenchmarkSessionLease computeLease,
         CancellationToken cancellationToken)
     {
+        ExternalExecutionPolicy.ThrowIfNativeProcessControlBlocked("BenchmarkApplicationService.ExecuteServingWorkItemAsync");
         var model = (await _store.ListModelsAsync()).FirstOrDefault(model => model.Id.Equals(item.ModelId, StringComparison.OrdinalIgnoreCase))
             ?? throw new InvalidOperationException($"Model '{item.ModelId}' is no longer registered.");
         var launchProfile = item.LaunchSettings ?? throw new InvalidOperationException("The benchmark work item has no saved launch-profile snapshot.");

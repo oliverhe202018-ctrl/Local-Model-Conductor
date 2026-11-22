@@ -206,13 +206,23 @@ internal sealed class ControlModelEndpoints : ControlEndpointHandler
             });
 
         if (segments.Length == 5 && segments[4].Equals("load", StringComparison.OrdinalIgnoreCase) && method == "POST")
+        {
+            if (ExternalExecutionPolicy.IsExternalLlamaSwapMode)
+                return await RouteModelControlViaGuardAsync(model, isUnload: false, cancellationToken);
             return await LoadModelAsync(model, Body<LocalControlLoadRequest>(request.Body), forceRestart: false, cancellationToken);
+        }
 
         if (segments.Length == 5 && segments[4].Equals("restart", StringComparison.OrdinalIgnoreCase) && method == "POST")
+        {
+            if (ExternalExecutionPolicy.IsExternalLlamaSwapMode)
+                return await RouteModelControlViaGuardAsync(model, isUnload: false, cancellationToken);
             return await LoadModelAsync(model, Body<LocalControlLoadRequest>(request.Body), forceRestart: true, cancellationToken);
+        }
 
         if (segments.Length == 5 && segments[4].Equals("unload", StringComparison.OrdinalIgnoreCase) && method == "POST")
         {
+            if (ExternalExecutionPolicy.IsExternalLlamaSwapMode)
+                return await RouteModelControlViaGuardAsync(model, isUnload: true, cancellationToken);
             await _deps.Actions.StopModelAsync(model, cancellationToken);
             return Ok(new { ok = true, model = model.Id, status = "unloaded" });
         }
@@ -332,6 +342,20 @@ internal sealed class ControlModelEndpoints : ControlEndpointHandler
             await Task.Delay(500, cancellationToken);
         }
         throw new InvalidOperationException($"Timed out after {timeout.TotalSeconds:N0} seconds waiting for {model.Name} to become ready.");
+    }
+
+    private async Task<LocalControlApiResponse> RouteModelControlViaGuardAsync(
+        ModelRecord model,
+        bool isUnload,
+        CancellationToken cancellationToken)
+    {
+        var bridge = new GuardControlBridgeService(GuardBackendOptions.Current);
+        var resp = isUnload
+            ? await bridge.UnloadAsync(LocalLLMManager.Guard.Contracts.GuardCallerRole.CliClient, cancellationToken)
+            : await bridge.SwitchProfileAsync(ModelGatewayRouteId.SafeSegment(model.Name), LocalLLMManager.Guard.Contracts.GuardCallerRole.CliClient, ct: cancellationToken);
+        return resp.Succeeded
+            ? Ok(new { ok = true, routedViaGuard = true, code = resp.Code, message = resp.Message, activeProfile = resp.ActiveProfile, state = resp.OperationalState.ToString() })
+            : Error(409, $"[Guard] {resp.Code}: {resp.Message}");
     }
 
     private static object ClassificationView(GgufFileClassification classification)

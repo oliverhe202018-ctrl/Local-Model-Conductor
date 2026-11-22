@@ -57,6 +57,8 @@ public sealed class RuntimeSessionRecoveryApplicationService
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(actions);
+        if (ExternalExecutionPolicy.IsExternalLlamaSwapMode)
+            return RuntimeSessionRecoveryApplicationResult.NoPersistedSessions;
 
         var persistedSessions = await _persistence.ReadAllAsync(cancellationToken);
         if (persistedSessions.Count == 0)

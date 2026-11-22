@@ -16,6 +16,9 @@
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.15" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\..\..\phase4a_guard\src\LocalLLMManager.Guard.Contracts\LocalLLMManager.Guard.Contracts.csproj" />
+  </ItemGroup>
+  <ItemGroup>
     <InternalsVisibleTo Include="LocalLlmConsole.Tests" />
   </ItemGroup>
 </Project>

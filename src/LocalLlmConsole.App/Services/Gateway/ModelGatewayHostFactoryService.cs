@@ -37,6 +37,8 @@ public sealed class ModelGatewayHostFactoryService
     {
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(runtime);
+        if (ExternalExecutionPolicy.IsExternalLlamaSwapMode)
+            return new NullModelGatewayHost();
         return _createGatewayHost(options, runtime);
     }
 

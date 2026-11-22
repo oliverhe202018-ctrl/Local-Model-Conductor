@@ -20,6 +20,7 @@ public sealed partial class LoadedModelSessionManager
         string launchProfileId = "",
         string launchProfileName = "")
     {
+        ExternalExecutionPolicy.ThrowIfNativeProcessControlBlocked("LoadedModelSessionManager.StartCoreAsync");
         var sessionId = SessionIdFor(model.Id, launchProfileId);
         settings = RuntimeDirectAliasService.ForLaunch(settings, model.ModelPath,
             Snapshots().Where(session => session.IsRunning && session.SessionId != sessionId)

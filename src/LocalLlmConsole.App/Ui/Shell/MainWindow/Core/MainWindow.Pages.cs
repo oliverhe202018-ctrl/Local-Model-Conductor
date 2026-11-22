@@ -19,6 +19,8 @@ public partial class MainWindow
 
     private void ShowOverview(bool refresh, bool rebuild = false)
     {
+        if (ExternalExecutionPolicy.IsExternalLlamaSwapMode) { ShowGuardOperationsCenter(refresh); return; }
+
         _pageControllers.Overview.CancelPendingSelections();
         SetPage("Overview", Loc.T("PageSubtitle.Overview"));
         if (rebuild || !_overviewPage.IsAvailable)

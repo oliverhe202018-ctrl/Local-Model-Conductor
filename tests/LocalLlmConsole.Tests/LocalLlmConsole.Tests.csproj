@@ -21,6 +21,8 @@
     <ProjectReference Include="..\..\src\LocalLlmConsole.App\LocalLlmConsole.App.csproj" />
     <ProjectReference Include="..\..\src\LocalLlmConsole.ControlCli\LocalLlmConsole.ControlCli.csproj" />
     <ProjectReference Include="..\LocalLlmConsole.FakeRuntime\LocalLlmConsole.FakeRuntime.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\..\..\..\phase4a_guard\src\LocalLLMManager.Guard.Contracts\LocalLLMManager.Guard.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\..\phase4a_guard\src\LocalLLMManager.Guard.Service\LocalLLMManager.Guard.Service.csproj" />
   </ItemGroup>
 
   <ItemGroup>

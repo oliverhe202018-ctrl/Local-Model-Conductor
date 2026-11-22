@@ -138,6 +138,19 @@
           "SQLitePCLRaw.core": "3.0.5"
         }
       },
+      "System.CodeDom": {
+        "type": "Transitive",
+        "resolved": "10.0.0",
+        "contentHash": "QWERdKi/tQAx+MbrPxTGcpchqMANnVXNiv2r2tILBBB38E74buD+fABSUhozZ1G9kjbadFB0m+HPFMkhJPeFvA=="
+      },
+      "System.Management": {
+        "type": "Transitive",
+        "resolved": "10.0.0",
+        "contentHash": "LE3rDZoPzulou78Tsq+3ALhUs4vatQ03v2QWbYVIenVPneUH/+LTUmHyyl098OxIFLQI6sNkZs8YHbUnT/sm3A==",
+        "dependencies": {
+          "System.CodeDom": "10.0.0"
+        }
+      },
       "System.Security.AccessControl": {
         "type": "Transitive",
         "resolved": "6.0.1",
@@ -209,6 +222,7 @@
       "LlamaCppWindowsManager": {
         "type": "Project",
         "dependencies": {
+          "LocalLLMManager.Guard.Contracts": "[1.0.0, )",
           "LocalLlmConsole.Core": "[1.0.0, )",
           "Microsoft.Data.Sqlite": "[10.0.15, )",
           "SQLitePCLRaw.bundle_e_sqlite3": "[3.0.5, )"
@@ -217,11 +231,23 @@
       "llwmctl": {
         "type": "Project",
         "dependencies": {
+          "LocalLLMManager.Guard.Contracts": "[1.0.0, )",
           "System.Security.Cryptography.ProtectedData": "[10.0.15, )"
         }
       },
       "localllmconsole.core": {
         "type": "Project"
+      },
+      "localllmmanager.guard.contracts": {
+        "type": "Project"
+      },
+      "localllmmanager.guard.service": {
+        "type": "Project",
+        "dependencies": {
+          "LocalLLMManager.Guard.Contracts": "[1.0.0, )",
+          "System.Management": "[10.0.0, )",
+          "System.Security.Cryptography.ProtectedData": "[10.0.15, )"
+        }
       }
     }
   }
