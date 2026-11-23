@@ -104,6 +104,15 @@ llwmctl logs audit
 
 ---
 
+## 🤝 上游致谢与派生说明 (Acknowledgements)
+
+Local Model Conductor（本地模型调度台）是一个基于优秀开源项目的受控 Fork 与架构进化版本：
+- **[alekk89/llama-cpp-windows-manager](https://github.com/alekk89/llama-cpp-windows-manager)** (MIT License, Copyright (c) 2024 alekk89)：提供了 Windows 桌面图形界面、多版本 llama.cpp 运行时管理及模型资产目录基础。
+- **[mostlygeek/llama-swap](https://github.com/mostlygeek/llama-swap)** (MIT License, Copyright (c) mostlygeek)：提供了核心的数据面代理网关与模型热切换机制。
+- **[ggerganov/llama.cpp](https://github.com/ggerganov/llama.cpp)** (MIT License, Copyright (c) 2023-2025 Georgi Gerganov)：提供了强大的本地大模型推理引擎。
+
+---
+
 ## 📄 开源许可证
 
 本项目核心代码基于 [MIT 许可证](LICENSE) 发布。第三方依赖声明与组件清单详见 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) 与 [sbom.spdx.json](sbom.spdx.json)。

@@ -83,6 +83,15 @@ llwmctl logs audit
 
 ---
 
+## 🤝 Upstream & Acknowledgements
+
+Local Model Conductor is a controlled fork and architectural evolution derived from:
+- [alekk89/llama-cpp-windows-manager](https://github.com/alekk89/llama-cpp-windows-manager) (MIT License, Copyright (c) 2024 alekk89) — Desktop UI foundation, runtime management, and model asset catalog.
+- [mostlygeek/llama-swap](https://github.com/mostlygeek/llama-swap) (MIT License, Copyright (c) mostlygeek) — Dynamic model swapping and unified proxy gateway.
+- [ggerganov/llama.cpp](https://github.com/ggerganov/llama.cpp) (MIT License, Copyright (c) 2023-2025 Georgi Gerganov) — Core LLM inference engine.
+
+---
+
 ## 📄 License
 
 Local Model Conductor is released under the [MIT License](LICENSE). Third-party runtime and component notices are documented in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) and [sbom.spdx.json](sbom.spdx.json).
