@@ -33,7 +33,8 @@ if (-not (Test-Path -LiteralPath $llamaSwapExe -PathType Leaf)) {
 
 # 2. Build official fake-model from mostlygeek/llama-swap cmd/fake-model
 if (-not (Test-Path -LiteralPath $fakeModelA -PathType Leaf) -or -not (Test-Path -LiteralPath $fakeModelB -PathType Leaf)) {
-    $go = (Get-Command go -CommandType Application -ErrorAction SilentlyContinue).Source
+    $goCmds = @(Get-Command go -CommandType Application -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source)
+    $go = if ($goCmds.Count -gt 0) { $goCmds[0] } else { $null }
     if (-not $go) {
         $fallbackGo = "D:\project\本地模型计算\LocalLLMManager\tools\toolchains\go1.27.4\go\bin\go.exe"
         if (Test-Path -LiteralPath $fallbackGo) { $go = $fallbackGo }

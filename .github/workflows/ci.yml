@@ -30,7 +30,7 @@ jobs:
           global-json-file: global.json
 
       - name: Setup Go
-        uses: actions/setup-go@414867caa0f7cb99d89244582f00ff0015bd8364 # v5
+        uses: actions/setup-go@v5
         with:
           go-version: '>=1.22'
 
