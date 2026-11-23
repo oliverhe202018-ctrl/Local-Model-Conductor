@@ -254,9 +254,10 @@ public sealed class GuardOperationsCenterController
         var path01 = System.IO.Path.Combine(outDir, "wpf_01_initial_model_a.png");
         SaveVisualPng(window, path01);
         results["screenshot_initial_a"] = path01;
-        
+
         var snapA = await _bridge.PollStatusAsync();
-        results["initial_state"] = new Dictionary<string, object?> {
+        results["initial_state"] = new Dictionary<string, object?>
+        {
             ["activeProfile"] = snapA.ActiveProfile,
             ["operationalState"] = snapA.DisplayState.ToString(),
             ["vramMiB"] = snapA.RawGuardStatus?.Telemetry?.GpuUsedVramMiB
@@ -266,7 +267,8 @@ public sealed class GuardOperationsCenterController
         var swB = System.Diagnostics.Stopwatch.StartNew();
         var respB = await _bridge.SwitchProfileAsync("profile_qwen", GuardCallerRole.UiClient);
         swB.Stop();
-        results["switch_to_b"] = new Dictionary<string, object?> {
+        results["switch_to_b"] = new Dictionary<string, object?>
+        {
             ["succeeded"] = respB.Succeeded,
             ["code"] = respB.Code.ToString(),
             ["message"] = respB.Message,
@@ -283,16 +285,19 @@ public sealed class GuardOperationsCenterController
         results["screenshot_model_b"] = path02;
 
         var snapB = await _bridge.PollStatusAsync();
-        results["model_b_state"] = new Dictionary<string, object?> {
+        results["model_b_state"] = new Dictionary<string, object?>
+        {
             ["activeProfile"] = snapB.ActiveProfile,
             ["operationalState"] = snapB.DisplayState.ToString(),
             ["vramMiB"] = snapB.RawGuardStatus?.Telemetry?.GpuUsedVramMiB
         };
 
         // Smoke test inference on 19000 for Model B
-        try {
+        try
+        {
             using var http = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(60) };
-            var chatPayload = System.Text.Json.JsonSerializer.Serialize(new {
+            var chatPayload = System.Text.Json.JsonSerializer.Serialize(new
+            {
                 model = "local-coder",
                 messages = new[] { new { role = "user", content = "Write 1 line of python" } },
                 max_tokens = 10,
@@ -302,7 +307,9 @@ public sealed class GuardOperationsCenterController
             var infResp = await http.PostAsync("http://127.0.0.1:19000/v1/chat/completions", content);
             results["model_b_inference_status"] = (int)infResp.StatusCode;
             results["model_b_inference_body"] = await infResp.Content.ReadAsStringAsync();
-        } catch (Exception ex) {
+        }
+        catch (Exception ex)
+        {
             results["model_b_inference_error"] = ex.Message;
         }
 
@@ -310,7 +317,8 @@ public sealed class GuardOperationsCenterController
         var swA = System.Diagnostics.Stopwatch.StartNew();
         var respA = await _bridge.SwitchProfileAsync("profile_cyber", GuardCallerRole.UiClient);
         swA.Stop();
-        results["switch_to_a"] = new Dictionary<string, object?> {
+        results["switch_to_a"] = new Dictionary<string, object?>
+        {
             ["succeeded"] = respA.Succeeded,
             ["code"] = respA.Code.ToString(),
             ["message"] = respA.Message,
@@ -327,16 +335,19 @@ public sealed class GuardOperationsCenterController
         results["screenshot_restored_a"] = path03;
 
         var snapFinal = await _bridge.PollStatusAsync();
-        results["restored_model_a_state"] = new Dictionary<string, object?> {
+        results["restored_model_a_state"] = new Dictionary<string, object?>
+        {
             ["activeProfile"] = snapFinal.ActiveProfile,
             ["operationalState"] = snapFinal.DisplayState.ToString(),
             ["vramMiB"] = snapFinal.RawGuardStatus?.Telemetry?.GpuUsedVramMiB
         };
 
         // Smoke test inference on 19000 for Model A
-        try {
+        try
+        {
             using var http = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(60) };
-            var chatPayload = System.Text.Json.JsonSerializer.Serialize(new {
+            var chatPayload = System.Text.Json.JsonSerializer.Serialize(new
+            {
                 model = "local-coder",
                 messages = new[] { new { role = "user", content = "Write 1 line of python" } },
                 max_tokens = 10,
@@ -346,7 +357,9 @@ public sealed class GuardOperationsCenterController
             var infResp = await http.PostAsync("http://127.0.0.1:19000/v1/chat/completions", content);
             results["model_a_inference_status"] = (int)infResp.StatusCode;
             results["model_a_inference_body"] = await infResp.Content.ReadAsStringAsync();
-        } catch (Exception ex) {
+        }
+        catch (Exception ex)
+        {
             results["model_a_inference_error"] = ex.Message;
         }
 

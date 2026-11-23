@@ -566,7 +566,7 @@ groups:
 
             using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(2) };
             bool extHealthyBefore = false;
-            for (int i = 0; i < 40; i++)
+            for (int i = 0; i < 100; i++)
             {
                 try
                 {
@@ -576,7 +576,7 @@ groups:
                 catch { }
                 await Task.Delay(150);
             }
-            Assert.True(extHealthyBefore);
+            Assert.True(extHealthyBefore, $"External mock model did not become healthy on port {ExternalMockPort} within 15 seconds.");
 
             // 1. Live OS discovery via Guard
             var statusWhileExt = await pipe.SendAsync(new GuardCommandRequest { Command = GuardCommandType.GET_STATUS, CallerRole = GuardCallerRole.UiClient });
