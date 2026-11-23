@@ -22,6 +22,15 @@ jobs:
       with:
         dotnet-version: '10.0.x'
 
+    - name: Setup Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '>=1.22'
+
+    - name: Prepare Guard Test Fixtures
+      shell: pwsh
+      run: .\scripts\prepare-test-fixtures.ps1
+
     - name: Check Code Shape
       shell: pwsh
       run: .\scripts\check-code-shape.ps1

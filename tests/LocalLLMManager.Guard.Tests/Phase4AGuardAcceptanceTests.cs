@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Sockets;
@@ -39,17 +39,18 @@ public sealed partial class Phase4AGuardAcceptanceTests
     private static bool IntegrationFixturesAvailable =>
         File.Exists(LlamaSwapExe) && File.Exists(FakeModelA) && File.Exists(FakeModelB);
 
-    // Isolated ports strictly within 19250-19260 (NEVER touching production 19000/8082/18083/3001)
-    private const int FacadePort = 19250;
-    private const int CyberPort = 19251;
-    private const int QwenPort = 19252;
-    private const int InklingPort = 19253;
-    private const int FailHealthPort = 19254;
-    private const int FailInferencePort = 19255;
-    private const int FailStartupPort = 19256;
-    private const int VanillaAuditPort = 19258;
-    private const int InternalSwapPort = 19259;
-    private const int ExternalMockPort = 19260;
+    // Isolated ports strictly within 19350-19360 (or configurable via GUARD_TEST_BASE_PORT, NEVER touching production 19000/8082/18083/3001)
+    private static readonly int BasePort = int.TryParse(Environment.GetEnvironmentVariable("GUARD_TEST_BASE_PORT"), out var bp) ? bp : 19350;
+    private static int FacadePort => BasePort;
+    private static int CyberPort => BasePort + 1;
+    private static int QwenPort => BasePort + 2;
+    private static int InklingPort => BasePort + 3;
+    private static int FailHealthPort => BasePort + 4;
+    private static int FailInferencePort => BasePort + 5;
+    private static int FailStartupPort => BasePort + 6;
+    private static int VanillaAuditPort => BasePort + 8;
+    private static int InternalSwapPort => BasePort + 9;
+    private static int ExternalMockPort => BasePort + 10;
 
     private static readonly JsonSerializerOptions PrettyJson = new()
     {
@@ -307,9 +308,9 @@ groups:
                 RequireAgentInferenceApiKey = true,
                 OverrideCredentials = new GuardCredentialSet(internalAdminKey, agentInferenceKey, DateTimeOffset.UtcNow),
                 Profiles = BuildMockProfiles(),
-                DiscoveryTargetImageNames = ["fake-model.exe"],
-                DiscoveryPortRangeMin = 19250,
-                DiscoveryPortRangeMax = 19260,
+                DiscoveryTargetImageNames = ["fake-model.exe", Path.GetFileName(FakeModelA), Path.GetFileName(FakeModelB)],
+                DiscoveryPortRangeMin = BasePort,
+                DiscoveryPortRangeMax = BasePort + 10,
                 ManagedGatewayPidProvider = () => protectedSwap.Id
             });
             await guardHost.StartAsync();
@@ -507,9 +508,9 @@ groups:
                 InternalLlamaSwapBaseUrl = $"http://127.0.0.1:{InternalSwapPort}",
                 OverrideCredentials = new GuardCredentialSet(internalAdminKey, agentKey, DateTimeOffset.UtcNow),
                 Profiles = BuildMockProfiles(),
-                DiscoveryTargetImageNames = ["fake-model.exe"],
-                DiscoveryPortRangeMin = 19250,
-                DiscoveryPortRangeMax = 19260,
+                DiscoveryTargetImageNames = ["fake-model.exe", Path.GetFileName(FakeModelA), Path.GetFileName(FakeModelB)],
+                DiscoveryPortRangeMin = BasePort,
+                DiscoveryPortRangeMax = BasePort + 10,
                 ManagedGatewayPidProvider = () => protectedSwap.Id
             });
             await guardHost.StartAsync();

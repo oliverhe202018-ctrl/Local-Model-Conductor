@@ -1,4 +1,4 @@
-﻿using LocalLLMManager.Guard.Contracts;
+using LocalLLMManager.Guard.Contracts;
 using LocalLLMManager.Guard.Service.Discovery;
 using LocalLLMManager.Guard.Service.Gate;
 using LocalLLMManager.Guard.Service.Security;

@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Sockets;
@@ -212,9 +212,9 @@ public sealed partial class Phase4AGuardAcceptanceTests
                 InternalLlamaSwapBaseUrl = $"http://127.0.0.1:{InternalSwapPort}",
                 OverrideCredentials = new GuardCredentialSet(internalAdminKey, agentKey, DateTimeOffset.UtcNow),
                 Profiles = BuildMockProfiles(),
-                DiscoveryTargetImageNames = ["fake-model.exe"],
-                DiscoveryPortRangeMin = 19250,
-                DiscoveryPortRangeMax = 19260,
+                DiscoveryTargetImageNames = ["fake-model.exe", Path.GetFileName(FakeModelA), Path.GetFileName(FakeModelB)],
+                DiscoveryPortRangeMin = BasePort,
+                DiscoveryPortRangeMax = BasePort + 10,
                 ManagedGatewayPidProvider = () => protectedSwap.Id
             };
 

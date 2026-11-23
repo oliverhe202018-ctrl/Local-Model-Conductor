@@ -1,12 +1,12 @@
 # Phase 4B.5 — Public Repository CI & Release Pipeline Hardening Final Report
 
-**Project**: Local Model Conductor (LMC, 本地模型调度台)  
-**Official Repository**: `https://github.com/oliverhe202018-ctrl/Local-Model-Conductor`  
-**Public Git Baseline**: `17c09a2e0d6c464ac601c7d72326fcd6607af960` (on `main`)  
-**Isolated Worktree**: `D:\project\本地模型计算\phase4b_5_worktree`  
-**Hardening Branch**: `phase4b-5-publication-hardening`  
-**Final Audit Verdict**: **`PHASE4B_5_PASS`**  
-**Execution Timestamp**: 2026-11-23T19:42:00+08:00  
+**Project**: Local Model Conductor (LMC, 本地模型调度台)
+**Official Repository**: `https://github.com/oliverhe202018-ctrl/Local-Model-Conductor`
+**Public Git Baseline**: `17c09a2e0d6c464ac601c7d72326fcd6607af960` (on `main`)
+**Isolated Worktree**: `D:\project\本地模型计算\phase4b_5_worktree`
+**Hardening Branch**: `phase4b-5-publication-hardening`
+**Final Audit Verdict**: **`PHASE4B_5_PASS`**
+**Execution Timestamp**: 2026-11-23T19:42:00+08:00
 
 ---
 

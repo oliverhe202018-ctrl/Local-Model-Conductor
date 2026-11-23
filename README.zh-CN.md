@@ -1,6 +1,6 @@
 # 本地模型调度台 (Local Model Conductor / LMC)
 
-> **One API. Safe Model Switching.**  
+> **One API. Safe Model Switching.**<br>
 > 专为 Windows 开发者打造的本地大模型 Runtime 管理、GPU 显存安全调度与统一 API Gateway 平台。
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -127,4 +127,4 @@ Local Model Conductor（本地模型调度台）是一个基于优秀开源项�
 
 ## 📄 开源许可证
 
-本项目核心代码基于 [MIT 许可证](LICENSE) 发布。第三方依赖声明与组件清单详见 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) 与 [sbom.spdx.json](sbom.spdx.json)。
+本项目核心代码基于 [MIT 许可证](LICENSE) 发布。第三方依赖声明与组件清单详见 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) 与 `sbom.spdx.json`（随发行包附带）。

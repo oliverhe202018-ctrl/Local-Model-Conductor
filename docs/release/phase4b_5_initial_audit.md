@@ -1,9 +1,9 @@
 # Phase 4B.5 — Initial Audit & Pipeline Hardening Plan
 
-**Document ID:** `PHASE4B5-AUDIT-20261123-01`  
-**Execution Mode:** `EXECUTE_ISOLATED_SOURCE_REPAIR`  
-**Working Directory:** `D:\project\本地模型计算\phase4b_5_worktree`  
-**Branch:** `phase4b-5-publication-hardening`  
+**Document ID:** `PHASE4B5-AUDIT-20261123-01`
+**Execution Mode:** `EXECUTE_ISOLATED_SOURCE_REPAIR`
+**Working Directory:** `D:\project\本地模型计算\phase4b_5_worktree`
+**Branch:** `phase4b-5-publication-hardening`
 **Base Commit:** `17c09a2e0d6c464ac601c7d72326fcd6607af960` (verified against remote `main`)
 
 ---

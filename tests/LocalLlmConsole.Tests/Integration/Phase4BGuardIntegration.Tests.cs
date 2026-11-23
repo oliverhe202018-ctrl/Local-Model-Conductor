@@ -60,14 +60,15 @@ public sealed class Phase4BGuardIntegrationTests
         return inRepo;
     }
 
-    // Strictly isolated ports in 19250-19260 (NEVER production 19000/8082/18083/3001)
-    private const int FacadePort = 19250;
-    private const int CyberPort = 19251;
-    private const int QwenPort = 19252;
-    private const int InklingPort = 19253;
-    private const int FailStartupPort = 19256;
-    private const int InternalSwapPort = 19259;
-    private const int ExternalMockPort = 19260;
+    // Strictly isolated ports in 19350-19360 (or configurable via GUARD_TEST_BASE_PORT, NEVER production 19000/8082/18083/3001)
+    private static readonly int BasePort = int.TryParse(Environment.GetEnvironmentVariable("GUARD_TEST_BASE_PORT"), out var bp) ? bp : 19350;
+    private static int FacadePort => BasePort;
+    private static int CyberPort => BasePort + 1;
+    private static int QwenPort => BasePort + 2;
+    private static int InklingPort => BasePort + 3;
+    private static int FailStartupPort => BasePort + 6;
+    private static int InternalSwapPort => BasePort + 9;
+    private static int ExternalMockPort => BasePort + 10;
 
     private static readonly JsonSerializerOptions PrettyJson = new()
     {
@@ -267,9 +268,9 @@ public sealed class Phase4BGuardIntegrationTests
                 RequireAgentInferenceApiKey = true,
                 OverrideCredentials = new GuardCredentialSet(internalKey, agentKey, DateTimeOffset.UtcNow),
                 Profiles = guardProfiles,
-                DiscoveryTargetImageNames = ["fake-model.exe"],
-                DiscoveryPortRangeMin = 19250,
-                DiscoveryPortRangeMax = 19260,
+                DiscoveryTargetImageNames = ["fake-model.exe", Path.GetFileName(FakeModelA), Path.GetFileName(FakeModelB)],
+                DiscoveryPortRangeMin = BasePort,
+                DiscoveryPortRangeMax = BasePort + 10,
                 ManagedGatewayPidProvider = () => internalSwap.Id
             };
 

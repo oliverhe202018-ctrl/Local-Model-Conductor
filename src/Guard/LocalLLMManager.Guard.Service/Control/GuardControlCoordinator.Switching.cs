@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Net.Sockets;
 using LocalLLMManager.Guard.Contracts;
 using LocalLLMManager.Guard.Service.Discovery;

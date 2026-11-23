@@ -1,6 +1,6 @@
 # Local Model Conductor (LMC)
 
-> **One API. Safe Model Switching.**  
+> **One API. Safe Model Switching.**<br>
 > An open-source, unofficial community project providing a professional Windows desktop platform for local LLM runtime management, GPU resource scheduling, zero-downtime safe model switching, and unified API gateway control.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -106,4 +106,4 @@ Local Model Conductor is a controlled fork and architectural evolution derived f
 
 ## 📄 License
 
-Local Model Conductor is released under the [MIT License](LICENSE). Third-party runtime and component notices are documented in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) and [sbom.spdx.json](sbom.spdx.json).
+Local Model Conductor is released under the [MIT License](LICENSE). Third-party runtime and component notices are documented in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) and `sbom.spdx.json` (distributed with release packages).

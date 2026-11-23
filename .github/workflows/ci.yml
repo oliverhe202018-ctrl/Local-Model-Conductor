@@ -29,6 +29,15 @@ jobs:
         with:
           global-json-file: global.json
 
+      - name: Setup Go
+        uses: actions/setup-go@414867caa0f7cb99d89244582f00ff0015bd8364 # v5
+        with:
+          go-version: '>=1.22'
+
+      - name: Prepare Guard test fixtures
+        shell: pwsh
+        run: .\scripts\prepare-test-fixtures.ps1
+
       - name: Check code shape
         shell: pwsh
         run: .\scripts\check-code-shape.ps1
@@ -40,6 +49,10 @@ jobs:
       - name: Verify updater handoff without instrumentation
         shell: pwsh
         run: dotnet test --project tests/LocalLlmConsole.Tests --no-restore --filter-class '*UpdateHandoffTests'
+
+      - name: Run Guard safety tests
+        shell: pwsh
+        run: dotnet test tests/LocalLLMManager.Guard.Tests/LocalLLMManager.Guard.Tests.csproj -c Release --report-xunit-trx
 
       - name: Test and enforce coverage
         shell: pwsh
