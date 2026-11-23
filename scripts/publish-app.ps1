@@ -308,6 +308,19 @@ foreach ($BundleFile in $BundleFiles) {
   Copy-Item -LiteralPath $BundleSource -Destination $PublishTarget -Force
 }
 
+$GuardProject = Join-Path $AppDir "src\Guard\LocalLLMManager.Guard.Service\LocalLLMManager.Guard.Service.csproj"
+if (Test-Path -LiteralPath $GuardProject) {
+  $GuardPublishDir = Join-Path $PublishDir "Guard"
+  New-Item -ItemType Directory -Path $GuardPublishDir -Force | Out-Null
+  & $Dotnet publish $GuardProject -c $Configuration -r $Runtime --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o $GuardPublishDir
+  if ($LASTEXITCODE -ne 0) { throw "Guard Service publish failed." }
+  $GuardExe = Join-Path $GuardPublishDir "LocalLLMManager.Guard.Service.exe"
+  if (Test-Path -LiteralPath $GuardExe) {
+    (Get-FileHash -LiteralPath $GuardExe -Algorithm SHA256).Hash.ToLowerInvariant() |
+      Set-Content -LiteralPath "$GuardExe.sha256" -Encoding ascii
+  }
+}
+
 $SbomPath = Join-Path $PublishDir "sbom.spdx.json"
 & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot "new-sbom.ps1") -OutputPath $SbomPath -Version ([string]$AppVersion)
 if ($LASTEXITCODE -ne 0) { throw "SPDX SBOM generation failed." }
