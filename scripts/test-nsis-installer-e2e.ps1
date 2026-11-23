@@ -81,9 +81,9 @@ function Record-Step {
     }
     $script:evidence.steps += $step
     if ($Success) {
-        Write-TestLog "$Name: PASSED ($Details)" "SUCCESS"
+        Write-TestLog "${Name}: PASSED ($Details)" "SUCCESS"
     } else {
-        Write-TestLog "$Name: FAILED ($Details)" "ERROR"
+        Write-TestLog "${Name}: FAILED ($Details)" "ERROR"
         throw "Installer E2E Step Failed: $Name - $Details"
     }
 }

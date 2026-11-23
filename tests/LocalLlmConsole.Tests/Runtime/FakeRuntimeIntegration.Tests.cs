@@ -33,7 +33,9 @@ public sealed class FakeRuntimeIntegrationTests : ManagerRegressionTestBase
             while (secondPort == settings.Port) secondPort = FreeFakeRuntimePort();
             var second = await sessions.StartAsync(runtime, model, settings with { Port = secondPort }, Path.Combine(root, "logs"), "second");
             await WaitForFakeRuntimeAsync(() => probe.IsAliveAsync(second.LaunchSettings, TestContext.Current.CancellationToken));
+            await WaitForFakeRuntimeAsync(async () => (await probe.ServedModelsAsync(first.LaunchSettings, TestContext.Current.CancellationToken)).SequenceEqual(["Qwen-direct"]));
             Assert.Equal(["Qwen-direct"], await probe.ServedModelsAsync(first.LaunchSettings, TestContext.Current.CancellationToken));
+            await WaitForFakeRuntimeAsync(async () => (await probe.ServedModelsAsync(second.LaunchSettings, TestContext.Current.CancellationToken)).SequenceEqual(["Qwen-direct:2"]));
             Assert.Equal(["Qwen-direct:2"], await probe.ServedModelsAsync(second.LaunchSettings, TestContext.Current.CancellationToken));
             Assert.Equal(["Qwen-direct:2"], RuntimeModelAliasService.ReadAliases(second.LaunchSettings.CustomParameters));
             Assert.Equal("", settings.CustomParameters);
@@ -106,6 +108,7 @@ public sealed class FakeRuntimeIntegrationTests : ManagerRegressionTestBase
             Assert.True(supervisor.ProcessId > 0);
             Assert.Equal(model.Id, supervisor.ActiveModelId);
             Assert.Equal(runtime.Id, supervisor.ActiveRuntimeId);
+            await WaitForFakeRuntimeAsync(async () => (await probe.ServedModelsAsync(settings, TestContext.Current.CancellationToken)).SequenceEqual(["fixture-model-direct"]));
             Assert.Equal(["fixture-model-direct"], await probe.ServedModelsAsync(settings, TestContext.Current.CancellationToken));
 
             using var unauthenticated = await http.GetAsync(
