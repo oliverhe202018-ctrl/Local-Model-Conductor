@@ -303,7 +303,13 @@ public sealed class PersistenceFaultMatrixTests
                 scenarios = matrixResults
             };
 
-            var destPath = Path.Combine(@"D:\project\本地模型计算\phase4b_2_closure_audit", "closure_persistence_fault_matrix.json");
+            var auditDir = @"D:\project\本地模型计算\phase4b_2_closure_audit";
+            if (!Directory.Exists(auditDir))
+            {
+                auditDir = Path.Combine(AppContext.BaseDirectory, "phase4b_2_closure_audit");
+                Directory.CreateDirectory(auditDir);
+            }
+            var destPath = Path.Combine(auditDir, "closure_persistence_fault_matrix.json");
             await File.WriteAllTextAsync(destPath, JsonSerializer.Serialize(outMatrixJson, JsonOpt), Encoding.UTF8, ct);
         }
         finally

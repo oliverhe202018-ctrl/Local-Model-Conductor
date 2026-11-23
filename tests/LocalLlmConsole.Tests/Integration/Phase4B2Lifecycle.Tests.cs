@@ -15,12 +15,21 @@ namespace LocalLlmConsole.Tests;
 
 public sealed class Phase4B2LifecycleTests
 {
-    private const string LlwmctlExe = @"D:\project\本地模型计算\phase4b_windows_manager_fork\repo\src\LocalLlmConsole.ControlCli\bin\Release\net10.0-windows\win-x64\llwmctl.exe";
+    private static readonly string LlwmctlExe = ResolveLlwmctlExe();
     private static readonly JsonSerializerOptions JsonOpt = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         WriteIndented = true
     };
+
+    private static string ResolveLlwmctlExe()
+    {
+        var inRepo = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\src\LocalLlmConsole.ControlCli\bin\Release\net10.0-windows\win-x64\llwmctl.exe"));
+        if (File.Exists(inRepo)) return inRepo;
+        var hardcoded = @"D:\project\本地模型计算\phase4b_windows_manager_fork\repo\src\LocalLlmConsole.ControlCli\bin\Release\net10.0-windows\win-x64\llwmctl.exe";
+        if (File.Exists(hardcoded)) return hardcoded;
+        return inRepo;
+    }
 
     [Fact]
     public async Task Phase4B2_FullLifecycle_CrashRecovery_Persistence_And_10RoundStress()
@@ -272,7 +281,13 @@ public sealed class Phase4B2LifecycleTests
                 allPassed = true
             };
 
-            var outJsonPath = Path.Combine(@"D:\project\本地模型计算\phase4b_2_lifecycle_release", "phase4b2_guard_lifecycle_evidence.json");
+            var lifecycleEvidenceDir = @"D:\project\本地模型计算\phase4b_2_lifecycle_release";
+            if (!Directory.Exists(lifecycleEvidenceDir))
+            {
+                lifecycleEvidenceDir = Path.Combine(AppContext.BaseDirectory, "phase4b_2_lifecycle_release");
+                Directory.CreateDirectory(lifecycleEvidenceDir);
+            }
+            var outJsonPath = Path.Combine(lifecycleEvidenceDir, "phase4b2_guard_lifecycle_evidence.json");
             File.WriteAllText(outJsonPath, JsonSerializer.Serialize(evidence, JsonOpt), Encoding.UTF8);
 
             // Also output crash recovery evidence JSON
@@ -286,7 +301,7 @@ public sealed class Phase4B2LifecycleTests
                 operatorUnlockRequired = true,
                 tenRoundsStressResult = $"{stressRoundsPassed}/10 PASS"
             };
-            var crashJsonPath = Path.Combine(@"D:\project\本地模型计算\phase4b_2_lifecycle_release", "phase4b2_crash_recovery_evidence.json");
+            var crashJsonPath = Path.Combine(lifecycleEvidenceDir, "phase4b2_crash_recovery_evidence.json");
             File.WriteAllText(crashJsonPath, JsonSerializer.Serialize(crashEvidence, JsonOpt), Encoding.UTF8);
 
             // Also output state persistence evidence JSON
@@ -300,7 +315,7 @@ public sealed class Phase4B2LifecycleTests
                 preservedOriginalFile = true,
                 idempotencyBoundedAndPersisted = true
             };
-            var persistenceJsonPath = Path.Combine(@"D:\project\本地模型计算\phase4b_2_lifecycle_release", "phase4b2_state_persistence_evidence.json");
+            var persistenceJsonPath = Path.Combine(lifecycleEvidenceDir, "phase4b2_state_persistence_evidence.json");
             File.WriteAllText(persistenceJsonPath, JsonSerializer.Serialize(persistenceEvidence, JsonOpt), Encoding.UTF8);
         }
         finally
