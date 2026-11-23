@@ -53,3 +53,20 @@ jobs:
           TestResults/*.trx
           tests/**/TestResults/*.trx
         if-no-files-found: warn
+
+    - name: Setup NSIS Compiler
+      uses: joncloud/makensis-action@v4
+      with:
+        script-file: ""
+
+    - name: Verify Distribution Packaging (Dry-Run Artifact Gate)
+      shell: pwsh
+      run: |
+        .\scripts\build-distribution.ps1 -Configuration Release -Version "v3.0.0-ci-pr9"
+
+    - name: Upload Packaging Acceptance Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: packaging-acceptance-artifacts
+        path: dist/release/*
+        if-no-files-found: error
