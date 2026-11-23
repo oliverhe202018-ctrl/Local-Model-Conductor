@@ -17,10 +17,13 @@ RequestExecutionLevel user
 !define PRODUCT_REG_KEY "Software\LocalModelConductor"
 
 !ifndef SOURCE_DIR
-  !define SOURCE_DIR "..\..\phase4b_3_release\dist\LlamaCppWindowsManager-win-x64"
+  !define SOURCE_DIR "..\dist\LlamaCppWindowsManager-win-x64"
 !endif
 !ifndef OUTPUT_DIR
-  !define OUTPUT_DIR "..\dist"
+  !define OUTPUT_DIR "..\dist\release"
+!endif
+!ifndef APP_ICON
+  !define APP_ICON "..\src\LocalLlmConsole.App\Assets\AppIcon.ico"
 !endif
 
 Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
@@ -51,8 +54,8 @@ SetCompressor /SOLID lzma
 !include "LogicLib.nsh"
 
 !define MUI_ABORTWARNING
-!define MUI_ICON "..\..\phase4b_windows_manager_fork\repo\src\LocalLlmConsole.App\Assets\AppIcon.ico"
-!define MUI_UNICON "..\..\phase4b_windows_manager_fork\repo\src\LocalLlmConsole.App\Assets\AppIcon.ico"
+!define MUI_ICON "${APP_ICON}"
+!define MUI_UNICON "${APP_ICON}"
 
 ; Installer Pages
 !insertmacro MUI_PAGE_WELCOME
@@ -101,7 +104,6 @@ Section "MainSection" SEC01
   SetOutPath "$INSTDIR\Guard"
   File "${SOURCE_DIR}\Guard\LocalLLMManager.Guard.Service.exe"
   File "${SOURCE_DIR}\Guard\LocalLLMManager.Guard.Service.exe.sha256"
-  File "${SOURCE_DIR}\Guard\web.config"
   File /nonfatal "${SOURCE_DIR}\Guard\*.json"
 
   ; Copy Documentation and Licenses

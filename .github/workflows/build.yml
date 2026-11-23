@@ -9,7 +9,7 @@ on:
 jobs:
   build-and-test:
     runs-on: windows-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
 
     steps:
     - name: Checkout Source Code
@@ -22,21 +22,68 @@ jobs:
       with:
         dotnet-version: '10.0.x'
 
+    - name: Setup Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '>=1.22'
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Prepare Guard Test Fixtures
+      shell: pwsh
+      run: .\scripts\prepare-test-fixtures.ps1
+
+    - name: Check Code Shape
+      shell: pwsh
+      run: .\scripts\check-code-shape.ps1
+
     - name: Restore NuGet Packages
       run: dotnet restore LocalModelConductor.sln
 
     - name: Build Solution (Release)
       run: dotnet build LocalModelConductor.sln -c Release --no-restore
 
-    - name: Execute Full Regression Suite
-      id: test_step
-      continue-on-error: true
+    - name: Run Core Console Tests
       run: |
-        dotnet test tests/LocalLlmConsole.Tests/LocalLlmConsole.Tests.csproj -c Release --no-build --logger "trx;LogFileName=regression-results.trx"
+        dotnet test tests/LocalLlmConsole.Tests/LocalLlmConsole.Tests.csproj -c Release --no-build --report-xunit-trx
 
-    - name: Upload Test Report (TRX)
+    - name: Run UI Tests
+      run: |
+        dotnet test tests/LocalLlmConsole.UiTests/LocalLlmConsole.UiTests.csproj -c Release --no-build --report-xunit-trx
+
+    - name: Run Guard Safety Tests
+      run: |
+        dotnet test tests/LocalLLMManager.Guard.Tests/LocalLLMManager.Guard.Tests.csproj -c Release --no-build --report-xunit-trx
+
+    - name: Upload Test Reports (TRX)
+      if: always()
       uses: actions/upload-artifact@v4
       with:
         name: test-results-trx
-        path: tests/LocalLlmConsole.Tests/TestResults/*.trx
+        path: |
+          TestResults/*.trx
+          tests/**/TestResults/*.trx
         if-no-files-found: warn
+
+    - name: Install NSIS Compiler
+      shell: pwsh
+      run: |
+        choco install nsis --yes --no-progress
+        $compiler = "C:\Program Files (x86)\NSIS\makensis.exe"
+        if (-not (Test-Path -LiteralPath $compiler)) { throw "NSIS compiler not found after installation." }
+        Write-Host "NSIS compiler installed: $compiler"
+
+    - name: Verify Distribution Packaging (Dry-Run Artifact Gate)
+      shell: pwsh
+      run: |
+        .\scripts\build-distribution.ps1 -Configuration Release -Version "v3.0.0-ci-pr9"
+
+    - name: Upload Packaging Acceptance Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: packaging-acceptance-artifacts
+        path: dist/release/*
+        if-no-files-found: error

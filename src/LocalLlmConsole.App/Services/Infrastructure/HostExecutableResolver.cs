@@ -29,6 +29,9 @@ public static class HostExecutableResolver
 
     public static string CMakeExe()
     {
+        var overridePath = Environment.GetEnvironmentVariable("CMAKE_EXE") ?? Environment.GetEnvironmentVariable("LLAMA_CPP_CMAKE_PATH");
+        if (!string.IsNullOrWhiteSpace(overridePath) && File.Exists(overridePath)) return overridePath;
+
         try
         {
             return ResolveOnPath("cmake.exe");

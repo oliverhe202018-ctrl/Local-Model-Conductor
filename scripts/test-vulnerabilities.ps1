@@ -200,11 +200,12 @@ foreach ($project in $projects) {
   if ($LASTEXITCODE -ne 0) {
     throw "dotnet deprecated package audit failed for $project."
   }
-  $deprecatedCount = Count-Properties ($deprecatedText | ConvertFrom-Json) "deprecationReasons"
+  $deprecatedPackages = Get-DeprecatedPackages ($deprecatedText | ConvertFrom-Json)
+  $deprecatedCount = $deprecatedPackages.Count
   $totalDeprecated += $deprecatedCount
   if ($deprecatedCount -gt 0) {
     Write-Host "Deprecated packages found in $project" -ForegroundColor Red
-    $deprecatedText | Write-Host
+    $deprecatedPackages | Format-Table -Property id, resolvedVersion, deprecationReasons | Out-String | Write-Host
   }
 }
 

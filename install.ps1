@@ -62,17 +62,67 @@ function Get-ReleaseMetadata {
         [string]$ManifestOverride
     )
 
-    if (-not [string]::IsNullOrWhiteSpace($ManifestOverride) -and (Test-Path $ManifestOverride)) {
+    if (-not [string]::IsNullOrWhiteSpace($ManifestOverride) -and (Test-Path -LiteralPath $ManifestOverride)) {
         Write-LmcLog "Loading local release manifest from: $ManifestOverride" "INFO"
         $raw = Get-Content -LiteralPath $ManifestOverride -Raw -Encoding utf8
-        if ($ManifestOverride.EndsWith(".json", [System.StringComparison]::OrdinalIgnoreCase)) {
+        $fileName = [System.IO.Path]::GetFileName($ManifestOverride)
+
+        if ($fileName.EndsWith(".json", [System.StringComparison]::OrdinalIgnoreCase) -or $raw.TrimStart().StartsWith("{")) {
             $manifest = $raw | ConvertFrom-Json
+            $tagName = if ($manifest.version) { [string]$manifest.version } else { "v3.0.0" }
+            $matchedArt = $null
+
+            if ($manifest.artifacts) {
+                $matchedArt = $manifest.artifacts | Where-Object { $_.filename -match '^LocalModelConductor-Setup.*\.exe$' } | Select-Object -First 1
+                if (-not $matchedArt) {
+                    throw "Release manifest '$ManifestOverride' does not contain an entry for 'LocalModelConductor-Setup-*.exe' in 'artifacts'."
+                }
+                return [PSCustomObject]@{
+                    TagName = $tagName
+                    InstallerName = [string]$matchedArt.filename
+                    Checksum = [string]$matchedArt.sha256
+                    DownloadUrl = "https://github.com/$Owner/$Repo/releases/download/$tagName/$($matchedArt.filename)"
+                    IsPrerelease = [bool]$manifest.isPrerelease
+                    Source = "LocalManifestJson"
+                }
+            }
+            elseif ($manifest.installerAsset) {
+                return [PSCustomObject]@{
+                    TagName = $tagName
+                    InstallerName = [string]$manifest.installerAsset
+                    Checksum = [string]$manifest.sha256
+                    DownloadUrl = "https://github.com/$Owner/$Repo/releases/download/$tagName/$($manifest.installerAsset)"
+                    IsPrerelease = [bool]$manifest.isPrerelease
+                    Source = "LocalManifestLegacy"
+                }
+            }
+            else {
+                throw "Unrecognized JSON manifest format in '$ManifestOverride'. Missing 'artifacts' or 'installerAsset'."
+            }
+        }
+        else {
+            # Plain text SHA256SUMS format
+            $lines = Get-Content -LiteralPath $ManifestOverride
+            $matchedSha = $null
+            $matchedName = "LocalModelConductor-Setup-win-x64.exe"
+            foreach ($line in $lines) {
+                if ($line -match "([a-fA-F0-9]{64})\s+\*?(LocalModelConductor-Setup[^\s]*\.exe)") {
+                    $matchedSha = $matches[1].ToLowerInvariant()
+                    $matchedName = $matches[2]
+                    break
+                }
+            }
+            if (-not $matchedSha) {
+                throw "SHA256SUMS manifest '$ManifestOverride' does not contain a checksum entry for LocalModelConductor-Setup-*.exe."
+            }
+            $tagName = if ($TargetVersion) { $TargetVersion } else { "v3.0.0" }
             return [PSCustomObject]@{
-                TagName = if ($manifest.version) { $manifest.version } else { "v3.0.0" }
-                InstallerAsset = $manifest.installerAsset
-                Checksum = $manifest.sha256
-                IsPrerelease = [bool]$manifest.isPrerelease
-                Source = "LocalManifest"
+                TagName = $tagName
+                InstallerName = $matchedName
+                Checksum = $matchedSha
+                DownloadUrl = "https://github.com/$Owner/$Repo/releases/download/$tagName/$matchedName"
+                IsPrerelease = ($TargetChannel -eq "preview")
+                Source = "LocalSha256Sums"
             }
         }
     }
@@ -86,13 +136,14 @@ function Get-ReleaseMetadata {
         "Accept" = "application/vnd.github.v3+json"
     }
 
+    $response = $null
     try {
         $response = Invoke-RestMethod -Uri $apiUrl -Headers $headers -Method Get -TimeoutSec 15
     }
     catch {
         $ex = $_.Exception
         if ($DryRun) {
-            Write-LmcLog "[DRY-RUN] GitHub repository '$Owner/$Repo' is not yet published or unreachable. Using planned release metadata." "WARN"
+            Write-LmcLog "[DRY-RUN] GitHub repository '$Owner/$Repo' API is unreachable ($($ex.Message)). Simulating planned release." "WARN"
             $tag = if ($TargetVersion) { $TargetVersion } else { "v3.0.0" }
             return [PSCustomObject]@{
                 TagName = $tag
@@ -101,13 +152,30 @@ function Get-ReleaseMetadata {
                 ChecksumDownloadUrl = "https://github.com/$Owner/$Repo/releases/download/$tag/SHA256SUMS.txt"
                 IsPrerelease = ($TargetChannel -eq "preview")
                 Checksum = $null
-                Source = "DryRunPlannedTemplate"
+                Source = "DryRunSimulated"
             }
         }
         if ($ex.Response -and $ex.Response.StatusCode -eq 403) {
             throw "GitHub API rate limit exceeded. Please retry later or provide -LocalInstallerPath."
         }
         throw "Failed to fetch releases from GitHub: $($ex.Message)"
+    }
+
+    if ($null -eq $response -or $response.Count -eq 0) {
+        if ($DryRun) {
+            Write-LmcLog "[DRY-RUN] No releases have been published yet for $Owner/$Repo. Simulating planned release." "WARN"
+            $tag = if ($TargetVersion) { $TargetVersion } else { "v3.0.0" }
+            return [PSCustomObject]@{
+                TagName = $tag
+                InstallerName = "LocalModelConductor-Setup-win-x64.exe"
+                DownloadUrl = "https://github.com/$Owner/$Repo/releases/download/$tag/LocalModelConductor-Setup-win-x64.exe"
+                ChecksumDownloadUrl = "https://github.com/$Owner/$Repo/releases/download/$tag/SHA256SUMS.txt"
+                IsPrerelease = ($TargetChannel -eq "preview")
+                Checksum = $null
+                Source = "DryRunSimulated"
+            }
+        }
+        throw "No releases have been published yet for $Owner/$Repo. Official releases will be available upon the first release (v3.0.0). Please check https://github.com/$Owner/$Repo/releases for project updates."
     }
 
     $candidates = @()
@@ -118,7 +186,7 @@ function Get-ReleaseMetadata {
     }
 
     if ($candidates.Count -eq 0) {
-        throw "No matching releases found for channel '$TargetChannel' in $Owner/$Repo."
+        throw "No matching releases found for channel '$TargetChannel' in $Owner/$Repo. (Published releases: $($response.Count))"
     }
 
     $selectedRelease = $null
@@ -175,7 +243,7 @@ try {
     $tempWorkDir = ""
 
     if (-not [string]::IsNullOrWhiteSpace($LocalInstallerPath)) {
-        if (-not (Test-Path $LocalInstallerPath)) {
+        if (-not (Test-Path -LiteralPath $LocalInstallerPath)) {
             throw "Specified -LocalInstallerPath does not exist: $LocalInstallerPath"
         }
         $installerPath = [System.IO.Path]::GetFullPath($LocalInstallerPath)
@@ -185,7 +253,7 @@ try {
 
         # Check for companion hash
         $companionSha = "$installerPath.sha256"
-        if (Test-Path $companionSha) {
+        if (Test-Path -LiteralPath $companionSha) {
             $expectedHash = (Get-Content -LiteralPath $companionSha -Raw).Trim().Split(" `t")[0].ToLowerInvariant()
             Write-LmcLog "Loaded companion SHA-256: $expectedHash" "INFO"
         }
@@ -195,14 +263,14 @@ try {
         $tagName = $meta.TagName
         $installerName = if ($meta.InstallerName) { $meta.InstallerName } else { "LocalModelConductor-Setup-win-x64.exe" }
         $downloadUrl = $meta.DownloadUrl
-        $expectedHash = if ($meta.Checksum) { $meta.Checksum } else { "" }
+        $expectedHash = if ($meta.Checksum) { $meta.Checksum.ToLowerInvariant() } else { "" }
 
         if ($DryRun) {
             Write-LmcLog "[DRY-RUN] Target Version: $tagName" "INFO"
             Write-LmcLog "[DRY-RUN] Channel: $Channel (Prerelease=$($meta.IsPrerelease))" "INFO"
             Write-LmcLog "[DRY-RUN] Asset Name: $installerName" "INFO"
             Write-LmcLog "[DRY-RUN] Download URL: $downloadUrl" "INFO"
-            Write-LmcLog "[DRY-RUN] Expected SHA-256: $(if ($expectedHash) { $expectedHash } else { '<Fetched from SHA256SUMS.txt>' })" "INFO"
+            Write-LmcLog "[DRY-RUN] Expected SHA-256: $(if ($expectedHash) { $expectedHash } else { '<Fetched from ChecksumDownloadUrl>' })" "INFO"
             Write-LmcLog "[DRY-RUN] Planned Execution: Start-Process -FilePath <temp>\\$installerName -ArgumentList $(if ($Silent) { '/S' } else { '' }) -Wait" "INFO"
             Write-LmcLog "[DRY-RUN] Dry run completed. No files downloaded, no system changes made." "SUCCESS"
             return
@@ -218,13 +286,33 @@ try {
         Write-LmcLog "Download completed: $installerPath" "SUCCESS"
 
         if (-not $expectedHash -and $meta.ChecksumDownloadUrl) {
-            $sumsPath = Join-Path $tempWorkDir "SHA256SUMS.txt"
+            $chkFileName = [System.IO.Path]::GetFileName($meta.ChecksumDownloadUrl)
+            $sumsPath = Join-Path $tempWorkDir $chkFileName
+            Write-LmcLog "Downloading verification manifest from $($meta.ChecksumDownloadUrl) ..." "INFO"
             Invoke-WebRequest -Uri $meta.ChecksumDownloadUrl -OutFile $sumsPath -TimeoutSec 30
-            $lines = Get-Content -LiteralPath $sumsPath
-            foreach ($line in $lines) {
-                if ($line -match "([a-fA-F0-9]{64})\s+\*?$([regex]::Escape($installerName))") {
-                    $expectedHash = $matches[1].ToLowerInvariant()
-                    break
+
+            $chkRaw = Get-Content -LiteralPath $sumsPath -Raw -Encoding utf8
+            if ($chkFileName.EndsWith(".json", [System.StringComparison]::OrdinalIgnoreCase) -or $chkRaw.TrimStart().StartsWith("{")) {
+                try {
+                    $chkJson = $chkRaw | ConvertFrom-Json
+                    if ($chkJson.artifacts) {
+                        $matchedArt = $chkJson.artifacts | Where-Object { $_.filename -eq $installerName } | Select-Object -First 1
+                        if ($matchedArt -and $matchedArt.sha256) {
+                            $expectedHash = [string]$matchedArt.sha256.ToLowerInvariant()
+                        }
+                    } elseif ($chkJson.sha256) {
+                        $expectedHash = [string]$chkJson.sha256.ToLowerInvariant()
+                    }
+                } catch { }
+            }
+
+            if (-not $expectedHash) {
+                $lines = Get-Content -LiteralPath $sumsPath
+                foreach ($line in $lines) {
+                    if ($line -match "([a-fA-F0-9]{64})\s+\*?$([regex]::Escape($installerName))") {
+                        $expectedHash = $matches[1].ToLowerInvariant()
+                        break
+                    }
                 }
             }
         }
@@ -238,20 +326,20 @@ try {
         return
     }
 
-    # SHA-256 Integrity Verification
-    if (-not [string]::IsNullOrWhiteSpace($expectedHash)) {
-        Write-LmcLog "Computing local SHA-256 digest for $installerPath ..." "INFO"
-        $actualHash = (Get-FileHash -LiteralPath $installerPath -Algorithm SHA256).Hash.ToLowerInvariant()
-        Write-LmcLog "Calculated hash: $actualHash" "INFO"
-        Write-LmcLog "Expected hash:   $expectedHash" "INFO"
-
-        if ($actualHash -ne $expectedHash.ToLowerInvariant()) {
-            throw "SHA-256 checksum mismatch! The downloaded installer may be corrupt or tampered with.`nExpected: $expectedHash`nActual:   $actualHash"
-        }
-        Write-LmcLog "SHA-256 digest successfully verified!" "SUCCESS"
-    } else {
-        Write-LmcLog "Warning: No checksum provided for verification. Proceeding with caution." "WARN"
+    # Strict SHA-256 Integrity Verification (Fails closed on missing or mismatched hash)
+    if ([string]::IsNullOrWhiteSpace($expectedHash)) {
+        throw "Security verification failed: No valid SHA-256 checksum was provided or found for '$installerName'. Refusing to execute unverified installer."
     }
+
+    Write-LmcLog "Computing local SHA-256 digest for $installerPath ..." "INFO"
+    $actualHash = (Get-FileHash -LiteralPath $installerPath -Algorithm SHA256).Hash.ToLowerInvariant()
+    Write-LmcLog "Calculated hash: $actualHash" "INFO"
+    Write-LmcLog "Expected hash:   $expectedHash" "INFO"
+
+    if ($actualHash -ne $expectedHash.ToLowerInvariant()) {
+        throw "SHA-256 checksum mismatch! The installer may be corrupt or tampered with.`nExpected: $expectedHash`nActual:   $actualHash"
+    }
+    Write-LmcLog "SHA-256 digest successfully verified!" "SUCCESS"
 
     # Execute NSIS Installer
     Write-LmcLog "Launching installer: $installerPath" "INFO"
@@ -266,7 +354,7 @@ try {
     Write-LmcLog "Local Model Conductor (本地模型调度台) installed successfully!" "SUCCESS"
 }
 finally {
-    if (-not [string]::IsNullOrWhiteSpace($tempWorkDir) -and (Test-Path $tempWorkDir)) {
+    if (-not [string]::IsNullOrWhiteSpace($tempWorkDir) -and (Test-Path -LiteralPath $tempWorkDir)) {
         try {
             Remove-Item -LiteralPath $tempWorkDir -Recurse -Force -ErrorAction SilentlyContinue
         } catch { }

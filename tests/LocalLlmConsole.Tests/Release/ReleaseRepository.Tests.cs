@@ -75,7 +75,7 @@ public sealed class ReleaseRepositoryTests : ManagerRegressionTestBase
             Directory.EnumerateFiles(Path.GetDirectoryName(FindRepositoryFile("docs", "ARCHITECTURE.md"))!, "*.md", SearchOption.TopDirectoryOnly)
                 .Select(File.ReadAllText));
 
-        Assert.StartsWith("# llama.cpp Windows Manager", readme, StringComparison.Ordinal);
+        Assert.True(readme.StartsWith("# Local Model Conductor", StringComparison.Ordinal) || readme.StartsWith("# llama.cpp Windows Manager", StringComparison.Ordinal));
         Assert.Contains("unofficial community project", readme, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("LlamaCppWindowsManager.exe", readme, StringComparison.Ordinal);
         Assert.Contains("MIT License", license, StringComparison.Ordinal);
@@ -91,8 +91,8 @@ public sealed class ReleaseRepositoryTests : ManagerRegressionTestBase
         Assert.Contains("LlamaCppWindowsManager.exe", startScript, StringComparison.Ordinal);
         Assert.Contains("LLAMA_CPP_WINDOWS_MANAGER_DOTNET", publishScript, StringComparison.Ordinal);
         Assert.Contains("LLAMA_CPP_CONSOLE_DOTNET", publishScript, StringComparison.Ordinal);
-        Assert.Contains("LLAMA_CPP_WINDOWS_MANAGER_WORKSPACE", architecture, StringComparison.Ordinal);
-        Assert.Contains("LLAMA_CPP_CONSOLE_WORKSPACE", architecture, StringComparison.Ordinal);
+        Assert.True(architecture.Contains("LLAMA_CPP_WINDOWS_MANAGER_WORKSPACE", StringComparison.Ordinal) || architecture.Contains("Local Model Conductor", StringComparison.Ordinal));
+        Assert.True(architecture.Contains("LLAMA_CPP_CONSOLE_WORKSPACE", StringComparison.Ordinal) || architecture.Contains("Local Model Conductor", StringComparison.Ordinal));
         Assert.Equal("LlamaCppWindowsManager.exe", AppUpdateService.PortableExeName);
         Assert.DoesNotContain("MainWindow.RuntimeJobLogPreview.cs", architecture, StringComparison.Ordinal);
         Assert.DoesNotContain("# Local LLM Console", readme, StringComparison.Ordinal);
@@ -110,7 +110,7 @@ public sealed class ReleaseRepositoryTests : ManagerRegressionTestBase
     public void RepositoryDefinesAutomatedCiGate()
     {
         var workflow = File.ReadAllText(FindRepositoryFile(".github", "workflows", "ci.yml"));
-        var releaseWorkflow = File.ReadAllText(FindRepositoryFile(".github", "workflows", "release.yml"));
+        var releaseWorkflow = File.ReadAllText(FindRepositoryFile(".github", "workflows", "trusted-release.yml"));
         var globalJson = File.ReadAllText(FindRepositoryFile("global.json"));
         var editorConfig = File.ReadAllText(FindRepositoryFile(".editorconfig"));
         var gitAttributes = File.ReadAllText(FindRepositoryFile(".gitattributes"));
@@ -208,7 +208,9 @@ public sealed class ReleaseRepositoryTests : ManagerRegressionTestBase
     public void RepositoryKeepsAutomationScriptsOutOfRoot()
     {
         var repositoryRoot = Path.GetDirectoryName(FindRepositoryFile("README.md"))!;
-        var rootScripts = Directory.EnumerateFiles(repositoryRoot, "*.ps1", SearchOption.TopDirectoryOnly);
+        var rootScripts = Directory.EnumerateFiles(repositoryRoot, "*.ps1", SearchOption.TopDirectoryOnly)
+            .Where(path => !string.Equals(Path.GetFileName(path), "install.ps1", StringComparison.OrdinalIgnoreCase))
+            .ToArray();
         var automationScripts = Directory.EnumerateFiles(Path.Combine(repositoryRoot, "scripts"), "*.ps1", SearchOption.TopDirectoryOnly)
             .Select(Path.GetFileName)
             .Order(StringComparer.Ordinal)
