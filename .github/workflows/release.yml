@@ -34,10 +34,13 @@ jobs:
       with:
         dotnet-version: '10.0.x'
 
-    - name: Setup NSIS Compiler
-      uses: joncloud/makensis-action@v4
-      with:
-        script-file: "" # tool installation only
+    - name: Install NSIS Compiler
+      shell: pwsh
+      run: |
+        choco install nsis --yes --no-progress
+        $compiler = "C:\Program Files (x86)\NSIS\makensis.exe"
+        if (-not (Test-Path -LiteralPath $compiler)) { throw "NSIS compiler not found after installation." }
+        Write-Host "NSIS compiler installed: $compiler"
 
     - name: Build Distribution Bundle
       shell: pwsh

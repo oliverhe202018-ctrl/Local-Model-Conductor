@@ -54,10 +54,13 @@ jobs:
           tests/**/TestResults/*.trx
         if-no-files-found: warn
 
-    - name: Setup NSIS Compiler
-      uses: joncloud/makensis-action@v4
-      with:
-        script-file: ""
+    - name: Install NSIS Compiler
+      shell: pwsh
+      run: |
+        choco install nsis --yes --no-progress
+        $compiler = "C:\Program Files (x86)\NSIS\makensis.exe"
+        if (-not (Test-Path -LiteralPath $compiler)) { throw "NSIS compiler not found after installation." }
+        Write-Host "NSIS compiler installed: $compiler"
 
     - name: Verify Distribution Packaging (Dry-Run Artifact Gate)
       shell: pwsh
