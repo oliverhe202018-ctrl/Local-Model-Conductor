@@ -4,16 +4,25 @@ namespace LocalLlmConsole.Services;
 
 public enum UnifiedDisplayState
 {
+    RUNNING,
+    IDLE,
+    LOADING,
+    DRAINING,
+    ROLLING_BACK,
+    ROLLBACK_FAILED,
+    FAULT_LOCKED,
+    READ_ONLY_OBSERVATION,
+    GUARD_OFFLINE,
+    RECOVERY_REQUIRED,
+
+    // Phase 4B backwards-compatibility aliases
     PROFILE_ACTIVE,
-    MODEL_LOADING,
     MODEL_READY,
     MODEL_INFERENCE_VERIFIED,
+    MODEL_LOADING,
     MODEL_DRAINING,
-    MODEL_UNLOADED,
     MODEL_ERROR,
-    ROLLING_BACK,
-    FAULT_LOCKED,
-    READ_ONLY_OBSERVATION
+    MODEL_UNLOADED
 }
 
 public sealed record GuardSwitchStageProgress(
@@ -130,7 +139,7 @@ public sealed class GuardControlBridgeService
         {
             return new GuardOverviewSnapshot(
                 GuardOnline: false,
-                DisplayState: UnifiedDisplayState.READ_ONLY_OBSERVATION,
+                DisplayState: UnifiedDisplayState.GUARD_OFFLINE,
                 FixedGatewayBaseUrl: _options.FixedGatewayBaseUrl,
                 FixedLogicalModelId: _options.FixedLogicalModelId,
                 ActiveProfile: null,
@@ -308,19 +317,24 @@ public sealed class GuardControlBridgeService
         bool inferenceVerified,
         string? lastError)
     {
-        if (raw is null || !raw.GatewayHealthy)
-            return UnifiedDisplayState.READ_ONLY_OBSERVATION;
+        if (raw is null)
+            return UnifiedDisplayState.GUARD_OFFLINE;
 
         if (raw.OperationalState == GuardOperationalState.FAULT_LOCKED)
-            return UnifiedDisplayState.FAULT_LOCKED;
+            return string.IsNullOrWhiteSpace(lastError) ? UnifiedDisplayState.FAULT_LOCKED : UnifiedDisplayState.ROLLBACK_FAILED;
+        if (raw.OperationalState == GuardOperationalState.RECOVERY_REQUIRED)
+            return UnifiedDisplayState.RECOVERY_REQUIRED;
         if (raw.OperationalState == GuardOperationalState.ROLLING_BACK)
             return UnifiedDisplayState.ROLLING_BACK;
+        if (raw.OperationalState == GuardOperationalState.DRAINING)
+            return UnifiedDisplayState.DRAINING;
+        if (raw.OperationalState == GuardOperationalState.LOADING)
+            return UnifiedDisplayState.LOADING;
+
+        if (!raw.GatewayHealthy)
+            return UnifiedDisplayState.READ_ONLY_OBSERVATION;
         if (raw.ExternalGpuConflictActive || raw.OperationalState == GuardOperationalState.READ_ONLY_OBSERVATION)
             return UnifiedDisplayState.READ_ONLY_OBSERVATION;
-        if (raw.OperationalState == GuardOperationalState.DRAINING)
-            return UnifiedDisplayState.MODEL_DRAINING;
-        if (raw.OperationalState == GuardOperationalState.LOADING)
-            return UnifiedDisplayState.MODEL_LOADING;
 
         var hasRunning = raw.RunningManagedModels.Count > 0;
         if (hasRunning)
@@ -328,18 +342,19 @@ public sealed class GuardControlBridgeService
 
         // CRITICAL RULE (§6A): Never report PROFILE_ACTIVE as loaded when RunningManagedModels is empty!
         if (!string.IsNullOrWhiteSpace(raw.ActiveProfile))
-            return string.IsNullOrWhiteSpace(lastError) ? UnifiedDisplayState.PROFILE_ACTIVE : UnifiedDisplayState.MODEL_ERROR;
+            return string.IsNullOrWhiteSpace(lastError) ? UnifiedDisplayState.PROFILE_ACTIVE : UnifiedDisplayState.ROLLBACK_FAILED;
 
-        return UnifiedDisplayState.MODEL_UNLOADED;
+        return UnifiedDisplayState.IDLE;
     }
 
     private static GuardOperationalState UnifiedToGuardState(UnifiedDisplayState s) => s switch
     {
         UnifiedDisplayState.FAULT_LOCKED => GuardOperationalState.FAULT_LOCKED,
+        UnifiedDisplayState.RECOVERY_REQUIRED => GuardOperationalState.RECOVERY_REQUIRED,
         UnifiedDisplayState.ROLLING_BACK => GuardOperationalState.ROLLING_BACK,
-        UnifiedDisplayState.MODEL_DRAINING => GuardOperationalState.DRAINING,
-        UnifiedDisplayState.MODEL_LOADING => GuardOperationalState.LOADING,
-        UnifiedDisplayState.MODEL_READY or UnifiedDisplayState.MODEL_INFERENCE_VERIFIED => GuardOperationalState.RUNNING_HEALTHY,
+        UnifiedDisplayState.DRAINING or UnifiedDisplayState.MODEL_DRAINING => GuardOperationalState.DRAINING,
+        UnifiedDisplayState.LOADING or UnifiedDisplayState.MODEL_LOADING => GuardOperationalState.LOADING,
+        UnifiedDisplayState.RUNNING or UnifiedDisplayState.MODEL_READY or UnifiedDisplayState.MODEL_INFERENCE_VERIFIED => GuardOperationalState.RUNNING_HEALTHY,
         _ => GuardOperationalState.READ_ONLY_OBSERVATION
     };
 }

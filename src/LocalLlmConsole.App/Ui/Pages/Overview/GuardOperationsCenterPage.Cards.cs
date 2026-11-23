@@ -28,14 +28,18 @@ public sealed partial class GuardOperationsCenterPage
     {
         ApplyStateBadge(snap.DisplayState, snap.GuardOnline);
 
-        if (!snap.GuardOnline || snap.ExternalGpuConflictActive || snap.DisplayState == UnifiedDisplayState.FAULT_LOCKED)
+        if (!snap.GuardOnline || snap.ExternalGpuConflictActive || snap.DisplayState is UnifiedDisplayState.FAULT_LOCKED or UnifiedDisplayState.RECOVERY_REQUIRED or UnifiedDisplayState.ROLLBACK_FAILED)
         {
             _warningBanner.Visibility = Visibility.Visible;
             _warningText.Text = snap.DisplayState == UnifiedDisplayState.FAULT_LOCKED
-                ? $"[故障锁定 FAULT_LOCKED] {snap.FaultReason}"
-                : !snap.GuardOnline
-                    ? $"[Guard 离线 — 自动只读观察] {snap.FaultReason}"
-                    : $"[外部模型占卡警告 — 只读观察] 检测到外部非托管模型 ({snap.ExternalConflictSummary})，已强制锁定全部 GPU 竞争操作，严禁干扰外部进程。";
+                ? $"[双重故障锁定 FAULT_LOCKED] {snap.FaultReason} — 操作员需检查日志后点击【人工解除故障锁定】。"
+                : snap.DisplayState == UnifiedDisplayState.RECOVERY_REQUIRED
+                    ? $"[故障恢复锁定 RECOVERY_REQUIRED] {snap.FaultReason} — 未完成事务已安全阻断，需人工确认基线后解锁。"
+                    : snap.DisplayState == UnifiedDisplayState.ROLLBACK_FAILED
+                        ? $"[回滚失败 ROLLBACK_FAILED] {snap.FaultReason} — 自动回滚未成功，现场已保留。"
+                        : !snap.GuardOnline
+                            ? $"[Guard 离线 GUARD_OFFLINE] {snap.FaultReason} — 所有控制操作已禁用，请启动 Guard 后自动恢复。"
+                            : $"[外部模型占卡警告 — 只读保护] 检测到外部模型 ({snap.ExternalConflictSummary})，已锁定 GPU 竞争操作。";
         }
         else
         {
@@ -87,8 +91,14 @@ public sealed partial class GuardOperationsCenterPage
         var canMutate = snap.GuardOnline
             && !snap.ExternalGpuConflictActive
             && snap.DisplayState is not (UnifiedDisplayState.READ_ONLY_OBSERVATION
+                or UnifiedDisplayState.GUARD_OFFLINE
                 or UnifiedDisplayState.FAULT_LOCKED
+                or UnifiedDisplayState.RECOVERY_REQUIRED
+                or UnifiedDisplayState.ROLLBACK_FAILED
+                or UnifiedDisplayState.MODEL_ERROR
+                or UnifiedDisplayState.DRAINING
                 or UnifiedDisplayState.MODEL_DRAINING
+                or UnifiedDisplayState.LOADING
                 or UnifiedDisplayState.MODEL_LOADING
                 or UnifiedDisplayState.ROLLING_BACK);
 
@@ -97,7 +107,7 @@ public sealed partial class GuardOperationsCenterPage
             btn.IsEnabled = canMutate;
             btn.Opacity = canMutate ? 1.0 : 0.4;
         }
-        _unlockFaultButton.IsEnabled = snap.GuardOnline && snap.DisplayState == UnifiedDisplayState.FAULT_LOCKED;
+        _unlockFaultButton.IsEnabled = snap.GuardOnline && snap.DisplayState is UnifiedDisplayState.FAULT_LOCKED or UnifiedDisplayState.RECOVERY_REQUIRED;
         _unlockFaultButton.Opacity = _unlockFaultButton.IsEnabled ? 1.0 : 0.4;
 
         RenderModelCards(cards, canMutate);
@@ -176,16 +186,18 @@ public sealed partial class GuardOperationsCenterPage
     {
         var (label, bg, border, fg) = state switch
         {
-            UnifiedDisplayState.MODEL_INFERENCE_VERIFIED => ("MODEL_INFERENCE_VERIFIED · 已推理验收", "#132E21", "#3FB950", "#7EE787"),
-            UnifiedDisplayState.MODEL_READY => ("MODEL_READY · 已就绪待验收", "#132E21", "#2EA043", "#7EE787"),
-            UnifiedDisplayState.PROFILE_ACTIVE => ("PROFILE_ACTIVE · 仅选中未加载", "#142B44", "#58A6FF", "#79C0FF"),
-            UnifiedDisplayState.MODEL_LOADING => ("MODEL_LOADING · 正在加载", "#142B44", "#58A6FF", "#79C0FF"),
-            UnifiedDisplayState.MODEL_DRAINING => ("MODEL_DRAINING · 请求排空中", "#2B213D", "#A371F7", "#D2A8FF"),
+            UnifiedDisplayState.RUNNING or UnifiedDisplayState.MODEL_INFERENCE_VERIFIED => ("RUNNING · 模型已就绪运行", "#132E21", "#3FB950", "#7EE787"),
+            UnifiedDisplayState.MODEL_READY => ("RUNNING · 已就绪待验收", "#132E21", "#2EA043", "#7EE787"),
+            UnifiedDisplayState.IDLE or UnifiedDisplayState.MODEL_UNLOADED => ("IDLE · 待命空闲", "#1C2430", "#6E7681", "#C9D1D9"),
+            UnifiedDisplayState.PROFILE_ACTIVE => ("IDLE · 选中未加载", "#142B44", "#58A6FF", "#79C0FF"),
+            UnifiedDisplayState.LOADING or UnifiedDisplayState.MODEL_LOADING => ("LOADING · 模型加载中", "#142B44", "#58A6FF", "#79C0FF"),
+            UnifiedDisplayState.DRAINING or UnifiedDisplayState.MODEL_DRAINING => ("DRAINING · 活跃请求排空中", "#2B213D", "#A371F7", "#D2A8FF"),
             UnifiedDisplayState.ROLLING_BACK => ("ROLLING_BACK · 自动回滚中", "#3A2C0F", "#D29922", "#F2CC60"),
-            UnifiedDisplayState.FAULT_LOCKED => ("FAULT_LOCKED · 双重故障锁定", "#421519", "#F85149", "#FF7B72"),
-            UnifiedDisplayState.MODEL_ERROR => ("MODEL_ERROR · 模型异常", "#421519", "#F85149", "#FF7B72"),
-            UnifiedDisplayState.MODEL_UNLOADED => ("MODEL_UNLOADED · 未加载", "#1C2430", "#6E7681", "#C9D1D9"),
-            _ => (guardOnline ? "READ_ONLY_OBSERVATION · 只读观察" : "READ_ONLY_OBSERVATION · Guard 离线", "#3B2314", "#F0883E", "#FFA657")
+            UnifiedDisplayState.ROLLBACK_FAILED or UnifiedDisplayState.MODEL_ERROR => ("ROLLBACK_FAILED · 回滚失败", "#421519", "#F85149", "#FF7B72"),
+            UnifiedDisplayState.FAULT_LOCKED => ("FAULT_LOCKED · 故障锁定（需人工解除）", "#421519", "#F85149", "#FF7B72"),
+            UnifiedDisplayState.RECOVERY_REQUIRED => ("RECOVERY_REQUIRED · 需故障恢复", "#45220E", "#D29922", "#F2CC60"),
+            UnifiedDisplayState.GUARD_OFFLINE => ("GUARD_OFFLINE · Guard 控制服务离线", "#2D1B22", "#E5534B", "#FFA198"),
+            _ => (guardOnline ? "READ_ONLY_OBSERVATION · 外部模型只读保护" : "GUARD_OFFLINE · Guard 离线", "#3B2314", "#F0883E", "#FFA657")
         };
 
         _stateBadgeText.Text = label;

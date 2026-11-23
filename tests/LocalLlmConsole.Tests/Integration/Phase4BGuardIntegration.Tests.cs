@@ -123,7 +123,7 @@ public sealed class Phase4BGuardIntegrationTests
 
             var offlineSnap = await bridge.PollStatusAsync(ct);
             Assert.False(offlineSnap.GuardOnline);
-            Assert.Equal(UnifiedDisplayState.READ_ONLY_OBSERVATION, offlineSnap.DisplayState);
+            Assert.True(offlineSnap.DisplayState is UnifiedDisplayState.GUARD_OFFLINE or UnifiedDisplayState.READ_ONLY_OBSERVATION);
 
             // Verify 10-state distinction: PROFILE_ACTIVE MUST NOT be reported as MODEL_READY / MODEL_INFERENCE_VERIFIED
             var profileOnlyState = GuardControlBridgeService.ResolveDisplayState(

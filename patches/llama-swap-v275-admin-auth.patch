@@ -1,0 +1,76 @@
+diff --git a/internal/config/config.go b/internal/config/config.go
+index 0000001..0000002 100644
+--- a/internal/config/config.go
++++ b/internal/config/config.go
+@@ -220,6 +220,10 @@ type Config struct {
+ 	// API keys required for /v1/* inference endpoints.
+ 	RequiredAPIKeys []string `yaml:"apiKeys"`
+ 
++	// AdminAPIKeys isolates privileged management endpoints (/api/profiles/active,
++	// /api/models/unload, /api/models/pause, /api/models/resume, /unload, /api/inflight/*/cancel)
++	// from inference-only apiKeys. Must NEVER share keys with apiKeys.
++	AdminAPIKeys []string `yaml:"adminApiKeys"`
++
+diff --git a/internal/server/auth.go b/internal/server/auth.go
+index 0000001..0000002 100644
+--- a/internal/server/auth.go
++++ b/internal/server/auth.go
+@@ -40,6 +40,36 @@ func CreateAuthMiddleware(cfg config.Config) chain.Middleware {
+ 	}
+ }
+ 
++// CreateAdminAuthMiddleware enforces separate Guard-only adminApiKeys on mutating
++// management routes so inference-only Agent keys receive HTTP 403/401.
++func CreateAdminAuthMiddleware(cfg config.Config) chain.Middleware {
++	adminKeys := cfg.AdminAPIKeys
++	return func(next http.Handler) http.Handler {
++		if len(adminKeys) == 0 {
++			// Fail-closed when adminApiKeys is omitted in hardened builds: reject all mutating admin calls
++			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
++				swaputil.SendResponse(w, r, http.StatusForbidden, "forbidden: adminApiKeys not configured")
++			})
++		}
++		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
++			provided := swaputil.ExtractAPIKey(r)
++			for _, key := range adminKeys {
++				if subtle.ConstantTimeCompare([]byte(provided), []byte(key)) == 1 {
++					next.ServeHTTP(w, r)
++					return
++				}
++			}
++			status := http.StatusUnauthorized
++			if provided != "" {
++				status = http.StatusForbidden
++			}
++			swaputil.SendResponse(w, r, status, "forbidden: Guard admin credential required")
++		})
++	}
++}
+diff --git a/internal/server/server.go b/internal/server/server.go
+index 0000001..0000002 100644
+--- a/internal/server/server.go
++++ b/internal/server/server.go
+@@ -424,6 +424,7 @@ func (s *Server) routes() {
+ 	modelChain := chain.New(modelMWs...)
+ 	// Custom endpoints only need auth.
+ 	apiChain := chain.New(authMW)
++	adminChain := chain.New(CreateAdminAuthMiddleware(s.cfg))
+@@ -487,7 +488,7 @@ func (s *Server) routes() {
+ 	// Operations endpoints.
+-	mux.Handle("GET /unload", apiChain.ThenFunc(s.handleUnload))
++	mux.Handle("GET /unload", adminChain.ThenFunc(s.handleUnload))
+@@ -512,13 +513,13 @@ func (s *Server) routes() {
+ 	// API group (Admin-key protected — isolated from inference apiKeys).
+-	mux.Handle("POST /api/models/unload", apiChain.ThenFunc(s.handleAPIUnloadAll))
+-	mux.Handle("POST /api/models/unload/{model...}", apiChain.ThenFunc(s.handleAPIUnloadModel))
+-	mux.Handle("POST /api/models/pause", apiChain.ThenFunc(s.handleAPIPause))
+-	mux.Handle("POST /api/models/resume", apiChain.ThenFunc(s.handleAPIResume))
++	mux.Handle("POST /api/models/unload", adminChain.ThenFunc(s.handleAPIUnloadAll))
++	mux.Handle("POST /api/models/unload/{model...}", adminChain.ThenFunc(s.handleAPIUnloadModel))
++	mux.Handle("POST /api/models/pause", adminChain.ThenFunc(s.handleAPIPause))
++	mux.Handle("POST /api/models/resume", adminChain.ThenFunc(s.handleAPIResume))
+ 	mux.Handle("GET /api/profiles", apiChain.ThenFunc(s.handleAPIProfiles))
+-	mux.Handle("PUT /api/profiles/active", apiChain.ThenFunc(s.handleAPIActiveProfile))
+-	mux.Handle("POST /api/inflight/{id}/cancel", apiChain.ThenFunc(s.handleAPICancelInflight))
++	mux.Handle("PUT /api/profiles/active", adminChain.ThenFunc(s.handleAPIActiveProfile))
++	mux.Handle("POST /api/inflight/{id}/cancel", adminChain.ThenFunc(s.handleAPICancelInflight))

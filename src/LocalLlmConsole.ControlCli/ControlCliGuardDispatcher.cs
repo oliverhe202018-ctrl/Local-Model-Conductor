@@ -13,12 +13,6 @@ internal static class ControlCliGuardDispatcher
 {
     private const string DefaultGuardPipe = "LocalLLMManager.Guard.Control.v1";
 
-    private static readonly JsonSerializerOptions JsonOut = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        WriteIndented = true
-    };
-
     internal static bool TryResolveGuardOperation(Arguments args, out string operationKey)
     {
         operationKey = "";
@@ -72,14 +66,13 @@ internal static class ControlCliGuardDispatcher
                 if (operationKey == "gateway.health")
                 {
                     var healthy = response.Succeeded && response.Status?.GatewayHealthy == true;
-                    Console.WriteLine(JsonSerializer.Serialize(new
-                    {
-                        ok = healthy,
-                        gatewayHealthy = response.Status?.GatewayHealthy ?? false,
-                        operationalState = response.OperationalState.ToString(),
-                        activeProfile = response.ActiveProfile,
-                        externalGpuConflict = response.Status?.ExternalGpuConflictActive ?? false
-                    }, JsonOut));
+                    var health = new ControlCliGatewayHealth(
+                        healthy,
+                        response.Status?.GatewayHealthy ?? false,
+                        response.OperationalState.ToString(),
+                        response.ActiveProfile,
+                        response.Status?.ExternalGpuConflictActive ?? false);
+                    Console.WriteLine(JsonSerializer.Serialize(health, ControlCliJsonContext.Indented.ControlCliGatewayHealth));
                     return healthy ? 0 : 1;
                 }
                 break;
@@ -163,7 +156,7 @@ internal static class ControlCliGuardDispatcher
                 throw new InvalidOperationException($"Unsupported Guard CLI operation '{operationKey}'.");
         }
 
-        Console.WriteLine(JsonSerializer.Serialize(response, JsonOut));
+        Console.WriteLine(JsonSerializer.Serialize(response, ControlCliJsonContext.Indented.GuardCommandResponse));
         return response.Succeeded ? 0 : 1;
     }
 }
