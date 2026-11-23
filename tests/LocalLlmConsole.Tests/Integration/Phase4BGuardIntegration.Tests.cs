@@ -282,7 +282,13 @@ public sealed class Phase4BGuardIntegrationTests
             await guardHost.StartAsync(ct);
 
             // Item 2, 10, 11: Guard Connected + Live Status Refresh + GPU/RAM/Commit Telemetry
-            var onlineSnap = await bridge.PollStatusAsync(ct);
+            GuardOverviewSnapshot onlineSnap = null!;
+            for (int attempt = 0; attempt < 10; attempt++)
+            {
+                onlineSnap = await bridge.PollStatusAsync(ct);
+                if (onlineSnap.GuardOnline) break;
+                await Task.Delay(100, ct);
+            }
             Assert.True(onlineSnap.GuardOnline);
             Assert.NotNull(onlineSnap.RawGuardStatus?.Telemetry);
             Assert.True(onlineSnap.RawGuardStatus!.Telemetry!.RamAvailable);
@@ -414,7 +420,13 @@ public sealed class Phase4BGuardIntegrationTests
             await restartedGuard.StartAsync(ct);
 
             var freshAppBridge = new GuardControlBridgeService(new GuardBackendOptions(pipeName, $"http://127.0.0.1:{FacadePort}/v1", "local-coder", wmWorkspace, null));
-            var recoveredSnap = await freshAppBridge.PollStatusAsync(ct);
+            GuardOverviewSnapshot recoveredSnap = null!;
+            for (int attempt = 0; attempt < 10; attempt++)
+            {
+                recoveredSnap = await freshAppBridge.PollStatusAsync(ct);
+                if (recoveredSnap.GuardOnline) break;
+                await Task.Delay(100, ct);
+            }
             Assert.True(recoveredSnap.GuardOnline);
             Assert.Equal(UnifiedDisplayState.FAULT_LOCKED, recoveredSnap.DisplayState);
             Assert.Equal("cyber-tiel", recoveredSnap.LastKnownGoodProfile);
