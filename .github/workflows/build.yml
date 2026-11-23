@@ -79,7 +79,13 @@ jobs:
     - name: Verify Distribution Packaging (Dry-Run Artifact Gate)
       shell: pwsh
       run: |
-        .\scripts\build-distribution.ps1 -Configuration Release -Version "v3.0.0-ci-pr9"
+        .\scripts\build-distribution.ps1 -Configuration Release -Version "v3.2.0-ci-pr10"
+
+    - name: Run Windows NSIS Installer Real End-to-End Acceptance Test
+      shell: pwsh
+      run: |
+        $setupExe = (Get-Item "dist/release/LocalModelConductor-Setup-win-x64.exe").FullName
+        .\scripts\test-nsis-installer-e2e.ps1 -InstallerPath $setupExe -EvidenceOutputPath "dist/release/installer-e2e-evidence.json"
 
     - name: Upload Packaging Acceptance Artifacts
       uses: actions/upload-artifact@v4

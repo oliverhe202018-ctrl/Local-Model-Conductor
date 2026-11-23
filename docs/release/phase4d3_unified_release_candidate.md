@@ -1,12 +1,12 @@
 # Phase 4D.3 — Local Model Conductor 版本主线整合与统一发行候选（Unified RC）验收报告
 
-**执行模式**: `EXECUTE_ISOLATED_INTEGRATION_NO_RELEASE`  
-**正式产品名称**: Local Model Conductor（本地模型调度台）  
-**正式 GitHub 仓库**: `https://github.com/oliverhe202018-ctrl/Local-Model-Conductor`  
-**集成工作区分支**: `feature/phase4d3-unified-release-candidate`  
-**基线 Commit**: `367ab4e27fa0f8933997ca93eccd9c826a0c5424` (PR #9 HEAD, CI 验证通过)  
-**最终集成 Commit**: `e32d8ad3b6ee979601d2ec7570ae9a98efb04ee4`  
-**报告完成时间**: 2026-11-24  
+**执行模式**: `EXECUTE_ISOLATED_INTEGRATION_NO_RELEASE`
+**正式产品名称**: Local Model Conductor（本地模型调度台）
+**正式 GitHub 仓库**: `https://github.com/oliverhe202018-ctrl/Local-Model-Conductor`
+**集成工作区分支**: `feature/phase4d3-unified-release-candidate`
+**基线 Commit**: `367ab4e27fa0f8933997ca93eccd9c826a0c5424` (PR #9 HEAD, CI 验证通过)
+**最终集成 Commit**: `e32d8ad3b6ee979601d2ec7570ae9a98efb04ee4`
+**报告完成时间**: 2026-11-24
 
 ---
 
@@ -18,7 +18,7 @@
 > 2. **全量自动化测试 100% 通过**：在统一集成 Commit `e32d8ad` 下，单次完整执行全部 3 个测试套件，**1,549 PASS，0 FAIL，0 SKIP**（Core: 1404 PASS；UI: 141 PASS；Guard: 4 PASS）。
 > 3. **零外部依赖 Self-Contained 单文件打包成功**：生成 NSIS 安装包（83.86 MB）与便携版 ZIP（115.73 MB），通过打包前 13 项完整性门禁，无任何敏感信息泄露。
 > 4. **生产环境零重启、零掉线**：Ports 19000、19001、8082、19250、3001 全程持续健康，PID 保持不变，Hermes 与 Open WebUI 访问不受影响。
-> 
+>
 > **限制清单 (Limitations)**:
 > 1. **安装器隔离环境测试限制**：本地宿主机无可用 Windows Sandbox 权限，安装与卸载逻辑通过对 `installer/LocalModelConductor.nsi` 的严密代码级静态审查验证，未在干净沙箱中执行端到端物理安装。
 > 2. **多语言包质量覆盖限制**：仅中文 `zh-CN` 与英文 `en-US` 经过真实 UI 渲染与截图验证（21 种语言均包含 1990 个结构对齐的键），其余 19 种语言为基准翻译，后续可通过社群持续校阅。
