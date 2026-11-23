@@ -329,21 +329,31 @@ public sealed class RuntimeBuildExecutionTests : ManagerRegressionTestBase
         var service = new RuntimeBuildExecutionService(root, runner, runtimes, markers);
         var logPath = Path.Combine(root, "logs", "runtime-build.log");
 
-        var result = await service.ExecuteAsync(new RuntimeBuildExecutionRequest(preset, settings, plan, source, logPath, false, TestContext.Current.CancellationToken));
-        var registered = Assert.Single(await store.ListRuntimesAsync());
-        var metadata = System.Text.Json.Nodes.JsonNode.Parse(await File.ReadAllTextAsync(Path.Combine(plan.InstallDir, "local-llm-runtime.json"), TestContext.Current.CancellationToken))!.AsObject();
-        var log = await File.ReadAllTextAsync(logPath, TestContext.Current.CancellationToken);
-        var buildArgs = runner.Commands.Single(command => command.Contains("-InstallDir", StringComparer.Ordinal));
+        var dummyCmake = Path.Combine(root, "cmake.exe");
+        File.WriteAllText(dummyCmake, "");
+        Environment.SetEnvironmentVariable("LLAMA_CPP_CMAKE_PATH", dummyCmake);
+        try
+        {
+            var result = await service.ExecuteAsync(new RuntimeBuildExecutionRequest(preset, settings, plan, source, logPath, false, TestContext.Current.CancellationToken));
+            var registered = Assert.Single(await store.ListRuntimesAsync());
+            var metadata = System.Text.Json.Nodes.JsonNode.Parse(await File.ReadAllTextAsync(Path.Combine(plan.InstallDir, "local-llm-runtime.json"), TestContext.Current.CancellationToken))!.AsObject();
+            var log = await File.ReadAllTextAsync(logPath, TestContext.Current.CancellationToken);
+            var buildArgs = runner.Commands.Single(command => command.Contains("-InstallDir", StringComparer.Ordinal));
 
-        Assert.Equal(registered.Id, result.Runtime.Id);
-        Assert.Equal(RuntimeMode.Native, registered.Mode);
-        Assert.False(Directory.Exists(sourceDir));
-        Assert.Equal("official-windows-cpu", metadata["managedPresetId"]?.ToString());
-        Assert.Equal("native build output", log.Split(Environment.NewLine, StringSplitOptions.None)[0]);
-        Assert.Contains("Deleted downloaded source", log, StringComparison.Ordinal);
-        Assert.Contains("-NoUpdate", buildArgs);
-        Assert.Equal(0, markers.ActiveMarkerCount);
-        Assert.Contains("Downloaded source deleted", result.StatusMessage, StringComparison.Ordinal);
+            Assert.Equal(registered.Id, result.Runtime.Id);
+            Assert.Equal(RuntimeMode.Native, registered.Mode);
+            Assert.False(Directory.Exists(sourceDir));
+            Assert.Equal("official-windows-cpu", metadata["managedPresetId"]?.ToString());
+            Assert.Equal("native build output", log.Split(Environment.NewLine, StringSplitOptions.None)[0]);
+            Assert.Contains("Deleted downloaded source", log, StringComparison.Ordinal);
+            Assert.Contains("-NoUpdate", buildArgs);
+            Assert.Equal(0, markers.ActiveMarkerCount);
+            Assert.Contains("Downloaded source deleted", result.StatusMessage, StringComparison.Ordinal);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("LLAMA_CPP_CMAKE_PATH", null);
+        }
     }
 
 

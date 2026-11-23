@@ -1,10 +1,27 @@
-﻿# Local Model Conductor - Bootstrapper Test Suite (install.ps1.tests.ps1)
+﻿# Local Model Conductor - Comprehensive Bootstrapper Test Suite (install.ps1.tests.ps1)
 param(
-    [string]$ScriptPath = "D:\project\本地模型计算\phase4b_4_release_closure\install.ps1",
-    [string]$SetupExePath = "D:\project\本地模型计算\phase4b_4_release_closure\dist\LocalModelConductor-Setup-win-x64.exe"
+    [string]$ScriptPath,
+    [string]$SetupExePath
 )
 
 $ErrorActionPreference = "Stop"
+$RepoRoot = Split-Path -Parent $PSScriptRoot
+
+if (-not $ScriptPath) {
+    $ScriptPath = Join-Path $RepoRoot "install.ps1"
+}
+if (-not $SetupExePath) {
+    $candidateExe = Join-Path $RepoRoot "dist/release/LocalModelConductor-Setup-win-x64.exe"
+    if (Test-Path $candidateExe) {
+        $SetupExePath = $candidateExe
+    } else {
+        $SetupExePath = "D:\project\本地模型计算\phase4b_4_release_closure\dist\LocalModelConductor-Setup-win-x64.exe"
+    }
+}
+
+Write-Host "Target Script: $ScriptPath" -ForegroundColor Cyan
+Write-Host "Target Setup Exe Fixture: $SetupExePath" -ForegroundColor Cyan
+
 $testResults = @()
 
 function Invoke-ScriptProcess {
@@ -79,15 +96,25 @@ $testResults += Run-TestCase "SemVer Validation - Reject Invalid Version" {
     }
 }
 
-# --- Test 4: Local Installer with SHA-256 Verification ---
+# --- Test 4: Local Installer with Companion SHA-256 ---
 $testResults += Run-TestCase "Local Installer - SHA-256 Match and DryRun" {
-    $res = Invoke-ScriptProcess @("-LocalInstallerPath", $SetupExePath, "-DryRun")
-    if ($res.ExitCode -ne 0 -or $res.Output -notmatch "Loaded companion SHA-256" -or $res.Output -notmatch "\[DRY-RUN\]") {
-        throw "Local installer verification failed. ExitCode=$($res.ExitCode). Output: $($res.Output)"
+    $dummyExe = Join-Path ([System.IO.Path]::GetTempPath()) "MockSetup.exe"
+    Set-Content -Path $dummyExe -Value "MOCK_SETUP_PAYLOAD_VALID"
+    $dummyHash = (Get-FileHash -Path $dummyExe -Algorithm SHA256).Hash.ToLowerInvariant()
+    Set-Content -Path "$dummyExe.sha256" -Value "$dummyHash  MockSetup.exe"
+
+    try {
+        $res = Invoke-ScriptProcess @("-LocalInstallerPath", $dummyExe, "-DryRun")
+        if ($res.ExitCode -ne 0 -or $res.Output -notmatch "Loaded companion SHA-256" -or $res.Output -notmatch "\[DRY-RUN\]") {
+            throw "Local installer verification failed. ExitCode=$($res.ExitCode). Output: $($res.Output)"
+        }
+    }
+    finally {
+        Remove-Item $dummyExe, "$dummyExe.sha256" -Force -ErrorAction SilentlyContinue
     }
 }
 
-# --- Test 5: SHA-256 Tampering / Mismatch Detection ---
+# --- Test 5: Checksum Tampering Detection ---
 $testResults += Run-TestCase "Checksum Tampering Detection - Immediate Abort" {
     $tamperedExe = Join-Path ([System.IO.Path]::GetTempPath()) "TamperedSetup.exe"
     Set-Content -Path $tamperedExe -Value "CORRUPTED_INSTALLER_PAYLOAD"
@@ -105,25 +132,104 @@ $testResults += Run-TestCase "Checksum Tampering Detection - Immediate Abort" {
     }
 }
 
-# --- Test 6: Local Release Manifest Parsing ---
-$testResults += Run-TestCase "Manifest Parsing - Version & Checksum Matching" {
-    $tempManifest = Join-Path ([System.IO.Path]::GetTempPath()) "test-manifest.json"
-    $manifestData = @{
+# --- Test 6: Missing Checksum Fail-Closed ---
+$testResults += Run-TestCase "Missing Checksum - Fail-Closed Rejection" {
+    $noHashExe = Join-Path ([System.IO.Path]::GetTempPath()) "NoHashSetup.exe"
+    Set-Content -Path $noHashExe -Value "NO_HASH_SETUP_PAYLOAD"
+
+    try {
+        $res = Invoke-ScriptProcess @("-LocalInstallerPath", $noHashExe)
+        if ($res.ExitCode -eq 0 -or $res.Output -notmatch "Security verification failed: No valid SHA-256 checksum") {
+            throw "Expected fail-closed rejection was not caught! ExitCode=$($res.ExitCode). Output: $($res.Output)"
+        }
+    }
+    finally {
+        Remove-Item $noHashExe -Force -ErrorAction SilentlyContinue
+    }
+}
+
+# --- Test 7: Release Manifest JSON Parsing (artifacts array) ---
+$testResults += Run-TestCase "Release Manifest - Standard Artifacts Array Parsing" {
+    $tempManifest = Join-Path ([System.IO.Path]::GetTempPath()) "test-manifest-artifacts.json"
+    $dummyHash = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    $manifestData = [ordered]@{
         version = "v3.0.0"
-        installerAsset = "LocalModelConductor-Setup-win-x64.exe"
-        sha256 = (Get-FileHash -Path $SetupExePath -Algorithm SHA256).Hash
-        isPrerelease = $false
-    } | ConvertTo-Json
+        generatedAtUtc = "2026-11-23T12:00:00Z"
+        artifacts = @(
+            @{
+                filename = "LocalModelConductor-Setup-win-x64.exe"
+                sha256 = $dummyHash
+                sizeBytes = 104857600
+            },
+            @{
+                filename = "LocalModelConductor-Portable-win-x64.zip"
+                sha256 = "0000000000000000000000000000000000000000000000000000000000000000"
+                sizeBytes = 94371840
+            }
+        )
+    } | ConvertTo-Json -Depth 5
     Set-Content -Path $tempManifest -Value $manifestData -Encoding utf8
 
     try {
         $res = Invoke-ScriptProcess @("-LocalManifestPath", $tempManifest, "-DryRun")
-        if ($res.ExitCode -ne 0 -or $res.Output -notmatch "Loading local release manifest" -or $res.Output -notmatch "\[DRY-RUN\]") {
-            throw "Failed to parse local release manifest. ExitCode=$($res.ExitCode). Output: $($res.Output)"
+        if ($res.ExitCode -ne 0 -or $res.Output -notmatch "Expected SHA-256: $dummyHash" -or $res.Output -notmatch "\[DRY-RUN\]") {
+            throw "Failed to parse artifacts array manifest. ExitCode=$($res.ExitCode). Output: $($res.Output)"
         }
     }
     finally {
         Remove-Item $tempManifest -Force -ErrorAction SilentlyContinue
+    }
+}
+
+# --- Test 8: Release Manifest Missing Installer Record ---
+$testResults += Run-TestCase "Release Manifest - Missing Installer Record Abort" {
+    $tempManifest = Join-Path ([System.IO.Path]::GetTempPath()) "test-manifest-missing-installer.json"
+    $manifestData = [ordered]@{
+        version = "v3.0.0"
+        artifacts = @(
+            @{
+                filename = "UnrelatedFile.zip"
+                sha256 = "1111111111111111111111111111111111111111111111111111111111111111"
+                sizeBytes = 100
+            }
+        )
+    } | ConvertTo-Json -Depth 5
+    Set-Content -Path $tempManifest -Value $manifestData -Encoding utf8
+
+    try {
+        $res = Invoke-ScriptProcess @("-LocalManifestPath", $tempManifest, "-DryRun")
+        if ($res.ExitCode -eq 0 -or $res.Output -notmatch "does not contain an entry for 'LocalModelConductor-Setup-\*\.exe'") {
+            throw "Expected missing installer record error was not caught! ExitCode=$($res.ExitCode). Output: $($res.Output)"
+        }
+    }
+    finally {
+        Remove-Item $tempManifest -Force -ErrorAction SilentlyContinue
+    }
+}
+
+# --- Test 9: Plain Text SHA256SUMS.txt Parsing ---
+$testResults += Run-TestCase "SHA256SUMS - Plain Text Format Parsing" {
+    $tempSums = Join-Path ([System.IO.Path]::GetTempPath()) "SHA256SUMS.txt"
+    $dummyHash = "a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90"
+    $sumsData = "$dummyHash  LocalModelConductor-Setup-win-x64.exe`r`n1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef  Other.zip"
+    Set-Content -Path $tempSums -Value $sumsData -Encoding ascii
+
+    try {
+        $res = Invoke-ScriptProcess @("-LocalManifestPath", $tempSums, "-DryRun")
+        if ($res.ExitCode -ne 0 -or $res.Output -notmatch "Expected SHA-256: $dummyHash" -or $res.Output -notmatch "\[DRY-RUN\]") {
+            throw "Failed to parse SHA256SUMS text manifest. ExitCode=$($res.ExitCode). Output: $($res.Output)"
+        }
+    }
+    finally {
+        Remove-Item $tempSums -Force -ErrorAction SilentlyContinue
+    }
+}
+
+# --- Test 10: Non-existent Local Installer Path Abort ---
+$testResults += Run-TestCase "Local Installer - Non-Existent Path Abort" {
+    $res = Invoke-ScriptProcess @("-LocalInstallerPath", "C:\NonExistentDirectory\FakeSetup.exe")
+    if ($res.ExitCode -eq 0 -or $res.Output -notmatch "Specified -LocalInstallerPath does not exist") {
+        throw "Failed to abort on non-existent LocalInstallerPath. ExitCode=$($res.ExitCode). Output: $($res.Output)"
     }
 }
 
@@ -134,6 +240,4 @@ if ($failed.Count -gt 0) {
     throw "Bootstrapper test suite had $($failed.Count) failures."
 }
 
-$evidenceOut = "D:\project\本地模型计算\phase4b_4_release_closure\installer_bootstrapper_evidence.json"
-$testResults | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $evidenceOut -Encoding utf8
-Write-Host "Wrote evidence to $evidenceOut" -ForegroundColor Green
+Write-Host "All $($testResults.Count) bootstrapper test cases passed successfully!" -ForegroundColor Green

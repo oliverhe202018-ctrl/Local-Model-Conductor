@@ -40,6 +40,9 @@
 
 ## 🚀 三大安装与使用方式
 
+> [!NOTE]
+> **发行状态说明：** 当前仓库提供公开源代码与完整自动化构建管线。**正式安装包将在首次官方 Release (v3.0.0) 发布后开放。**
+
 ### 方式 A: PowerShell 一键安装（推荐普通用户）
 打开 Windows PowerShell（无需管理员权限），运行以下命令：
 ```powershell
@@ -101,6 +104,15 @@ llwmctl rollback
 # 5. 查看审计日志
 llwmctl logs audit
 ```
+
+---
+
+## 📚 项目开发与技术文档
+
+- [DEVELOPMENT.md](docs/DEVELOPMENT.md) — 开发者贡献指南与测试流程。
+- [ARCHITECTURE.md](docs/ARCHITECTURE.md) — 系统架构与组件边界裁决。
+- [CONTROL_API.md](docs/CONTROL_API.md) — Guard 安全 IPC 与管控 API 规范。
+- [INSTALLER.md](docs/INSTALLER.md) — 安装、打包与升级生命周期。
 
 ---
 

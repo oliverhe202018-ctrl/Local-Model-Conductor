@@ -39,59 +39,11 @@ jobs:
       with:
         script-file: "" # tool installation only
 
-    - name: Publish Binaries
+    - name: Build Distribution Bundle
       shell: pwsh
       run: |
-        $dist = "dist/LlamaCppWindowsManager-win-x64"
-        New-Item -ItemType Directory -Path $dist, "$dist/Guard" -Force
-
-        # 1. Native AOT CLI
-        dotnet publish src/LocalLlmConsole.ControlCli/LocalLlmConsole.ControlCli.csproj -c Release -r win-x64 --self-contained true -p:PublishAot=true -o "$dist"
-
-        # 2. WPF Desktop App
-        dotnet publish src/LocalLlmConsole.App/LocalLlmConsole.App.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o "$dist"
-
-        # 3. Guard Safety Service
-        dotnet publish src/Guard/LocalLLMManager.Guard.Service/LocalLLMManager.Guard.Service.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o "$dist/Guard"
-
-    - name: Build NSIS Installer
-      shell: pwsh
-      run: |
-        New-Item -ItemType Directory -Path "dist/release" -Force
-        makensis /INPUTCHARSET UTF8 installer/LocalModelConductor.nsi
-
-    - name: Build Portable ZIP Package
-      shell: pwsh
-      run: |
-        $dist = "dist/LlamaCppWindowsManager-win-x64"
-        $zipOut = "dist/release/LocalModelConductor-Portable-win-x64.zip"
-        Compress-Archive -Path "$dist/*" -DestinationPath $zipOut -CompressionLevel Optimal
-
-    - name: Generate Checksums & Manifest
-      shell: pwsh
-      run: |
-        $releaseDir = "dist/release"
-        $files = Get-ChildItem -Path $releaseDir -File -Filter "*.exe", "*.zip"
-        $sums = @()
-        $manifestEntries = @()
-
-        foreach ($f in $files) {
-          $hash = (Get-FileHash -Path $f.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
-          $sums += "$hash  $($f.Name)"
-          $manifestEntries += [PSCustomObject]@{
-            filename = $f.Name
-            sha256 = $hash
-            sizeBytes = $f.Length
-          }
-        }
-
-        Set-Content -Path "$releaseDir/SHA256SUMS.txt" -Value ($sums -join "`r`n") -Encoding ascii
-        $manifest = [PSCustomObject]@{
-          version = $env:GITHUB_REF_NAME
-          generatedAtUtc = [DateTime]::UtcNow.ToString("o")
-          artifacts = $manifestEntries
-        }
-        $manifest | ConvertTo-Json -Depth 4 | Set-Content -Path "$releaseDir/release-manifest.json" -Encoding utf8
+        $tag = if ($env:GITHUB_REF_NAME) { $env:GITHUB_REF_NAME } else { "v3.0.0" }
+        .\scripts\build-distribution.ps1 -Configuration Release -Version $tag
 
     - name: Publish GitHub Release
       uses: softprops/action-gh-release@v2

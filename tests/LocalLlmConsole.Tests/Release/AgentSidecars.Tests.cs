@@ -235,7 +235,7 @@ public sealed class AgentSidecarsTests : ManagerRegressionTestBase
         var startup = File.ReadAllText(FindRepositoryFile("src", "LocalLlmConsole.App", "App.xaml.cs"));
         var publish = File.ReadAllText(FindRepositoryFile("scripts", "publish-app.ps1"));
         var releaseGate = File.ReadAllText(FindRepositoryFile("scripts", "test-release-gate.ps1"));
-        var releaseWorkflow = File.ReadAllText(FindRepositoryFile(".github", "workflows", "release.yml"));
+        var releaseWorkflow = File.ReadAllText(FindRepositoryFile(".github", "workflows", "trusted-release.yml"));
         var installer = File.ReadAllText(FindRepositoryFile("installer", "LlamaCppWindowsManager.iss"));
 
         Assert.DoesNotContain("LocalLlmConsole.AgentBootstrap.zip", project, StringComparison.Ordinal);

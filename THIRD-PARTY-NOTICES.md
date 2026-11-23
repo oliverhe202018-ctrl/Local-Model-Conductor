@@ -1,4 +1,4 @@
-# Third-Party Notices
+﻿# Third-Party Notices
 
 Local Model Conductor (本地模型调度台) is distributed as an open-source, self-contained Windows application.
 The release includes the Microsoft .NET Runtime under `licenses/dotnet/`.
@@ -19,7 +19,7 @@ The release includes the Microsoft .NET Runtime under `licenses/dotnet/`.
 
 ## Directly and Transitively Referenced NuGet Packages
 
-- **Microsoft.Data.Sqlite 10.0.15** & **Microsoft.Data.Sqlite.Core 10.0.15** — MIT  
+- Microsoft.Data.Sqlite 10.0.15 and Microsoft.Data.Sqlite.Core 10.0.15 -- MIT  
   Copyright (c) Microsoft Corporation. All rights reserved.
 - **System.Security.Cryptography.ProtectedData 10.0.15** — MIT  
   Copyright (c) Microsoft Corporation. All rights reserved.
@@ -70,3 +70,4 @@ SOFTWARE.
 ### The Apache License, Version 2.0 (for SQLitePCLRaw and xUnit components)
 
 See `licenses/Apache-2.0.txt` for the full text of the Apache License, Version 2.0.
+

@@ -5,14 +5,14 @@ namespace LocalLlmConsole.Tests;
 public sealed class ReleaseWorkflowSecretsTests : ManagerRegressionTestBase
 {
     private static readonly string[] CredentialFreeCheckoutWorkflows =
-        ["release.yml", "prepare-unsigned-release.yml", "signpath-test.yml"];
+        ["trusted-release.yml", "prepare-unsigned-release.yml", "signpath-test.yml"];
 
     private static readonly Regex SecretReference = new(@"secrets\.(?<name>[A-Z0-9_]+)", RegexOptions.CultureInvariant);
 
     [Fact]
     public void WorkflowSecretsAreScopedToConsumingSteps()
     {
-        var workflowRoot = Path.GetDirectoryName(FindRepositoryFile(".github", "workflows", "release.yml"))!;
+        var workflowRoot = Path.GetDirectoryName(FindRepositoryFile(".github", "workflows", "trusted-release.yml"))!;
         foreach (var path in Directory.EnumerateFiles(workflowRoot, "*.yml"))
         {
             var lines = File.ReadAllLines(path);
@@ -31,7 +31,7 @@ public sealed class ReleaseWorkflowSecretsTests : ManagerRegressionTestBase
     [Fact]
     public void ReleaseWorkflowMapsEachSecretOnlyIntoItsConsumer()
     {
-        var steps = ParseSteps(File.ReadAllLines(FindRepositoryFile(".github", "workflows", "release.yml")));
+        var steps = ParseSteps(File.ReadAllLines(FindRepositoryFile(".github", "workflows", "trusted-release.yml")));
         var expected = new Dictionary<string, string>(StringComparer.Ordinal)
         {
             ["RELEASE_TAG_SIGNING_PUBLIC_KEY_BASE64"] = "Verify signed annotated tag and release identity",
