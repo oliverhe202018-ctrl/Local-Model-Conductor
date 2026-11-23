@@ -18,8 +18,8 @@ public sealed class Phase4BGuardIntegrationTests
 {
     private static readonly string ForkOutDir = ResolveForkOutDir();
     private static readonly string LlamaSwapExe = Environment.GetEnvironmentVariable("LLAMA_SWAP_PATH") ?? @"D:\project\本地模型计算\LocalLLMManager\vendor\llama-swap\v275\llama-swap.exe";
-    private static readonly string FakeModelA = ResolveFakeModel(@"D:\project\本地模型计算\LocalLLMManager\tools\fake-model\v275\fake-model.exe", "fake-model-a.exe");
-    private static readonly string FakeModelB = ResolveFakeModel(@"D:\project\本地模型计算\LocalLLMManager\tools\fake-model\v275-runtime-b\fake-model.exe", "fake-model-b.exe");
+    private static readonly string FakeModelA = Environment.GetEnvironmentVariable("FAKE_MODEL_A_PATH") ?? ResolveFakeModel(@"D:\project\本地模型计算\LocalLLMManager\tools\fake-model\v275\fake-model.exe", "fake-model-a.exe");
+    private static readonly string FakeModelB = Environment.GetEnvironmentVariable("FAKE_MODEL_B_PATH") ?? ResolveFakeModel(@"D:\project\本地模型计算\LocalLLMManager\tools\fake-model\v275-runtime-b\fake-model.exe", "fake-model-b.exe");
     private static readonly string LlwmctlExe = ResolveLlwmctlExe();
     private static readonly string WmAppExe = ResolveWmAppExe();
 
@@ -35,6 +35,10 @@ public sealed class Phase4BGuardIntegrationTests
     private static string ResolveFakeModel(string preferredPath, string fileName)
     {
         if (File.Exists(preferredPath)) return preferredPath;
+        var inRepoFixtures = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\tests\fixtures", fileName));
+        if (File.Exists(inRepoFixtures)) return inRepoFixtures;
+        var relativeFixtures = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, @"..\..\..\fixtures", fileName));
+        if (File.Exists(relativeFixtures)) return relativeFixtures;
         var inRepo = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\tests\LocalLlmConsole.FakeRuntime\bin\Release\net10.0-windows\LocalLlmConsole.FakeRuntime.exe"));
         if (File.Exists(inRepo)) return inRepo;
         var fallback = Path.Combine(AppContext.BaseDirectory, fileName);

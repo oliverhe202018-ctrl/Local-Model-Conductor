@@ -72,10 +72,13 @@ Write-Host "  llama-swap: $llamaSwapExe"
 Write-Host "  fake-model-a: $fakeModelA"
 Write-Host "  fake-model-b: $fakeModelB"
 
+$faultPy = Join-Path $TargetDir "mock_fault_server.py"
+
 # Export environment variables for GitHub Actions runner if applicable
 if ($env:GITHUB_ENV) {
     "LLAMA_SWAP_PATH=$llamaSwapExe" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
     "FAKE_MODEL_A_PATH=$fakeModelA" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
     "FAKE_MODEL_B_PATH=$fakeModelB" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+    "FAULT_SERVER_PY_PATH=$faultPy" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
     "GUARD_TEST_BASE_PORT=19350" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 }

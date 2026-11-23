@@ -23,9 +23,21 @@ public sealed partial class Phase4AGuardAcceptanceTests
 {
     private static readonly string OutDir = ResolveOutDir();
     private static readonly string LlamaSwapExe = Environment.GetEnvironmentVariable("LLAMA_SWAP_PATH") ?? @"D:\project\本地模型计算\LocalLLMManager\vendor\llama-swap\v275\llama-swap.exe";
-    private static readonly string FakeModelA = Environment.GetEnvironmentVariable("FAKE_MODEL_A_PATH") ?? @"D:\project\本地模型计算\LocalLLMManager\tools\fake-model\v275\fake-model.exe";
-    private static readonly string FakeModelB = Environment.GetEnvironmentVariable("FAKE_MODEL_B_PATH") ?? @"D:\project\本地模型计算\LocalLLMManager\tools\fake-model\v275-runtime-b\fake-model.exe";
-    private static readonly string FaultServerPy = Environment.GetEnvironmentVariable("FAULT_SERVER_PY_PATH") ?? @"D:\project\本地模型计算\phase3_3_integration_spike\spike_tests\mock_fault_server.py";
+    private static readonly string FakeModelA = Environment.GetEnvironmentVariable("FAKE_MODEL_A_PATH") ?? ResolveFixtureFile("fake-model-a.exe", @"D:\project\本地模型计算\LocalLLMManager\tools\fake-model\v275\fake-model.exe");
+    private static readonly string FakeModelB = Environment.GetEnvironmentVariable("FAKE_MODEL_B_PATH") ?? ResolveFixtureFile("fake-model-b.exe", @"D:\project\本地模型计算\LocalLLMManager\tools\fake-model\v275-runtime-b\fake-model.exe");
+    private static readonly string FaultServerPy = Environment.GetEnvironmentVariable("FAULT_SERVER_PY_PATH") ?? ResolveFixtureFile("mock_fault_server.py", @"D:\project\本地模型计算\phase3_3_integration_spike\spike_tests\mock_fault_server.py");
+
+    private static string ResolveFixtureFile(string fileName, string preferredHardcoded)
+    {
+        if (File.Exists(preferredHardcoded)) return preferredHardcoded;
+        var inRepoFixtures = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\tests\fixtures", fileName));
+        if (File.Exists(inRepoFixtures)) return inRepoFixtures;
+        var relativeFixtures = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, @"..\..\..\fixtures", fileName));
+        if (File.Exists(relativeFixtures)) return relativeFixtures;
+        var baseDirFixtures = Path.Combine(AppContext.BaseDirectory, fileName);
+        if (File.Exists(baseDirFixtures)) return baseDirFixtures;
+        return preferredHardcoded;
+    }
 
     private static string ResolveOutDir()
     {
@@ -67,17 +79,38 @@ public sealed partial class Phase4AGuardAcceptanceTests
 
     private static string ResolvePythonExe()
     {
-        using var proc = Process.Start(new ProcessStartInfo
+        var envPy = Environment.GetEnvironmentVariable("PYTHON_EXE_PATH");
+        if (!string.IsNullOrWhiteSpace(envPy) && File.Exists(envPy)) return envPy;
+
+        try
         {
-            FileName = "where.exe",
-            Arguments = "python",
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            CreateNoWindow = true
-        })!;
-        var outText = proc.StandardOutput.ReadToEnd();
-        proc.WaitForExit(5000);
-        return outText.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries).First().Trim();
+            using var proc = Process.Start(new ProcessStartInfo
+            {
+                FileName = "where.exe",
+                Arguments = "python",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                CreateNoWindow = true
+            });
+            if (proc != null)
+            {
+                var outText = proc.StandardOutput.ReadToEnd();
+                proc.WaitForExit(5000);
+                var lines = outText.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)
+                    .Select(l => l.Trim())
+                    .Where(l => !l.Contains("WindowsApps", StringComparison.OrdinalIgnoreCase) && File.Exists(l))
+                    .ToArray();
+                if (lines.Length > 0) return lines[0];
+            }
+        }
+        catch { }
+
+        foreach (var candidate in new[] { @"C:\hostedtoolcache\windows\Python\3.12.9\x64\python.exe", @"C:\hostedtoolcache\windows\Python\3.12.8\x64\python.exe", @"C:\Python312\python.exe", @"C:\Python311\python.exe" })
+        {
+            if (File.Exists(candidate)) return candidate;
+        }
+
+        return "python";
     }
 
     private static string CreateLlamaSwapYaml(string yamlPath, string? apiKey, bool includeFaults = true)

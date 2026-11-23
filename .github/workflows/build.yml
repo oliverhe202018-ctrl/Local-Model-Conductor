@@ -27,6 +27,11 @@ jobs:
       with:
         go-version: '>=1.22'
 
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
     - name: Prepare Guard Test Fixtures
       shell: pwsh
       run: .\scripts\prepare-test-fixtures.ps1
