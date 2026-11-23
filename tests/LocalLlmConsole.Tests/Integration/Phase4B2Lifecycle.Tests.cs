@@ -54,11 +54,11 @@ public sealed class Phase4B2LifecycleTests
                 ["qwen36"] = new() { ProfileName = "qwen36", ModelId = "qwen36-mock", UpstreamPort = 19267, RuntimeExecutablePath = "mock.exe", IsIsolatedMockProfile = true }
             };
 
-            GuardHostConfig MakeConfig(string pipe) => new()
+            GuardHostConfig MakeConfig(string pipe, int port = 19265) => new()
             {
                 StateDirectory = stateDir,
                 PipeName = pipe,
-                AgentFacadeListenPort = 19265,
+                AgentFacadeListenPort = port,
                 InternalLlamaSwapBaseUrl = "http://127.0.0.1:19269",
                 RequireAgentInferenceApiKey = true,
                 OverrideCredentials = new GuardCredentialSet(internalKey, agentKey, DateTimeOffset.UtcNow),
@@ -102,6 +102,7 @@ public sealed class Phase4B2LifecycleTests
             // =================================================================
             var swDisconnect = Stopwatch.StartNew();
             await guardHost1.StopAsync(ct);
+            await guardHost1.DisposeAsync();
             guardHost1 = null;
 
             // Measure WPF disconnect detection time
@@ -181,6 +182,7 @@ public sealed class Phase4B2LifecycleTests
             Assert.True(secondCmd.DeduplicatedReplay, "B3: Duplicate idempotency key must return cached replayed response");
 
             await guardHost2.StopAsync(ct);
+            await guardHost2.DisposeAsync();
             guardHost2 = null;
 
             // =================================================================
@@ -190,23 +192,36 @@ public sealed class Phase4B2LifecycleTests
             for (int r = 1; r <= 10; r++)
             {
                 var roundPipe = $"{pipeName}_r{r}";
-                var hostRound = GuardHostFactory.Build(MakeConfig(roundPipe));
+                var roundPort = 19370 + r;
+                await using var hostRound = GuardHostFactory.Build(MakeConfig(roundPipe, roundPort));
                 await hostRound.StartAsync(ct);
 
                 var clientRound = new GuardControlBridgeService(new GuardBackendOptions(
                     roundPipe,
-                    "http://127.0.0.1:19265/v1",
+                    $"http://127.0.0.1:{roundPort}/v1",
                     "local-coder",
                     baseDir,
                     null));
 
-                var s1 = await clientRound.PollStatusAsync(ct);
+                GuardOverviewSnapshot s1 = null!;
+                for (int attempt = 0; attempt < 10; attempt++)
+                {
+                    s1 = await clientRound.PollStatusAsync(ct);
+                    if (s1.GuardOnline) break;
+                    await Task.Delay(100, ct);
+                }
                 Assert.True(s1.GuardOnline, $"B4 Round {r}: connect");
 
                 // Abrupt stop
                 await hostRound.StopAsync(ct);
 
-                var sOff = await clientRound.PollStatusAsync(ct);
+                GuardOverviewSnapshot sOff = null!;
+                for (int attempt = 0; attempt < 10; attempt++)
+                {
+                    sOff = await clientRound.PollStatusAsync(ct);
+                    if (!sOff.GuardOnline) break;
+                    await Task.Delay(100, ct);
+                }
                 Assert.False(sOff.GuardOnline, $"B4 Round {r}: offline detection");
                 stressRoundsPassed++;
             }
