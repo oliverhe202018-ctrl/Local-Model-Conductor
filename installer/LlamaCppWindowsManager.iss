@@ -11,7 +11,7 @@
 #define AppCliName "llwmctl.exe"
 #define GuardExeName "LocalLLMManager.Guard.Service.exe"
 #ifndef AppVersion
-#define AppVersion "3.0.0"
+#define AppVersion "3.2.0"
 #endif
 #ifndef SourceDir
 #define SourceDir "dist\LlamaCppWindowsManager-win-x64"
@@ -25,9 +25,9 @@ AppId={{5C6D440C-0EE0-4FEC-8D86-6AADEAA24620}
 AppName={#AppName}
 AppVersion={#AppVersion}
 AppPublisher=llama.cpp Windows Manager & LocalLLMManager Contributors
-AppPublisherURL=https://github.com/alekk89/llama-cpp-windows-manager
-AppSupportURL=https://github.com/alekk89/llama-cpp-windows-manager/issues
-AppUpdatesURL=https://github.com/alekk89/llama-cpp-windows-manager/releases
+AppPublisherURL=https://github.com/oliverhe202018-ctrl/Local-Model-Conductor
+AppSupportURL=https://github.com/oliverhe202018-ctrl/Local-Model-Conductor/issues
+AppUpdatesURL=https://github.com/oliverhe202018-ctrl/Local-Model-Conductor/releases
 DefaultDirName={code:GetDefaultDirName}
 DefaultGroupName={#AppName}
 UsePreviousAppDir=yes

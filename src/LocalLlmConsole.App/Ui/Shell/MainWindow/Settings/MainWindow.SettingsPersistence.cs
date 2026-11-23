@@ -40,15 +40,13 @@ public partial class MainWindow
         => new(
             settings =>
             {
-                var runtimeLogOrderChanged = !string.Equals(
-                    _settings.RuntimeLogOrder,
-                    settings.RuntimeLogOrder,
-                    StringComparison.OrdinalIgnoreCase);
+                var runtimeLogOrderChanged = !string.Equals(_settings.RuntimeLogOrder, settings.RuntimeLogOrder, StringComparison.OrdinalIgnoreCase);
+                var uiCultureChanged = !string.Equals(_settings.UiCulture, settings.UiCulture, StringComparison.OrdinalIgnoreCase);
                 _settings = settings;
                 ApplicationUiScaleService.Apply(settings.UiScalePercent); ApplicationFontScaleService.Apply(settings.FontScalePercent);
                 ApplyTrayIconVisibilityPreference();
-                if (_viewModel.CurrentPage == "Settings")
-                    _settingsPage.Synchronize(() => _viewModel.Settings.ApplyPersistedSettings(settings));
+                if (uiCultureChanged) { Localization.Loc.LoadLanguage(settings.UiCulture); ApplyLocalizedXamlStrings(); PopulateLanguageSelector(); RefreshCurrentPage(); }
+                else if (_viewModel.CurrentPage == "Settings") _settingsPage.Synchronize(() => _viewModel.Settings.ApplyPersistedSettings(settings));
                 ApplyGpuEnergyTrackingBoundary();
                 _overviewPage.ApplyUiPreferences(settings);
                 _modelsPage.ApplyUiPreferences(settings);

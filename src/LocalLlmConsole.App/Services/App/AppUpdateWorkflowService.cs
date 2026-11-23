@@ -68,23 +68,33 @@ public sealed class AppUpdateWorkflowService
     {
         if (update.IsAvailable)
         {
+            var isInstallerOnly = !update.CanAutoInstall;
             return new AppUpdateCheckWorkflowResult(
                 update,
-                $"Update available: {update.LatestVersion}.",
-                ShouldPromptInstall: manual,
-                ShouldShowNoUpdateDialog: false,
-                "Install update",
-                $"Update {update.CurrentVersion} -> {update.LatestVersion} is available.\n\n{update.ReleaseName}\n\n" +
-                (update.AuthenticityVerified ? "" : "This release is unsigned. Its SHA-256 checksum will be checked before installation.\n\n") +
-                "Install it now?");
+                isInstallerOnly
+                    ? $"New version available ({update.LatestVersion}). Manual installer required."
+                    : $"Update available: {update.LatestVersion}.",
+                ShouldPromptInstall: manual && !isInstallerOnly,
+                ShouldShowNoUpdateDialog: manual && isInstallerOnly,
+                isInstallerOnly ? "Official Release Available" : "Install update",
+                isInstallerOnly
+                    ? $"Version {update.LatestVersion} is available on GitHub as an installer package.\n\nPlease visit the official release page to download and upgrade.\n\n{update.HtmlUrl}"
+                    : $"Update {update.CurrentVersion} -> {update.LatestVersion} is available.\n\n{update.ReleaseName}\n\n" +
+                      (update.AuthenticityVerified ? "" : "This release is unsigned. Its SHA-256 checksum will be checked before installation.\n\n") +
+                      "Install it now?");
         }
+
+        var isNoRelease = update.ReleaseName.Contains("No official release", StringComparison.OrdinalIgnoreCase)
+            || update.ReleaseName.Contains("No GitHub release feed", StringComparison.OrdinalIgnoreCase);
 
         return new AppUpdateCheckWorkflowResult(
             update,
-            "No app updates available.",
+            isNoRelease ? "No official release has been published yet." : "No app updates available.",
             ShouldPromptInstall: false,
             ShouldShowNoUpdateDialog: manual,
             "Check for updates",
-            $"No updates are available.\n\nCurrent version: {update.CurrentVersion}");
+            isNoRelease
+                ? $"No official release has been published yet.\n\nCurrent version: {update.CurrentVersion}"
+                : $"No updates are available.\n\nCurrent version: {update.CurrentVersion}");
     }
 }

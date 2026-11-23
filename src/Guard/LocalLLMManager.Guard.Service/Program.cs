@@ -5,11 +5,14 @@ using LocalLLMManager.Guard.Service;
 // Independent foreground/background process host for LocalLLMManager.Guard (Phase 4A).
 // Explicitly does NOT register any Windows Service or startup scheduled task.
 var stateDir = GetArg(args, "--state-dir") ?? Path.Combine(AppContext.BaseDirectory, "guard_state");
-var pipeName = GetArg(args, "--pipe") ?? "LocalLLMManager.Guard.Control.Isolated";
+var pipeName = GetArg(args, "--pipe") ?? GuardPipeClient.DefaultProductionPipeName;
 var listenPort = int.TryParse(GetArg(args, "--listen-port"), out var lp) ? lp : 19250;
 var internalUrl = GetArg(args, "--internal-url") ?? "http://127.0.0.1:19259";
 var profilesPath = GetArg(args, "--profiles-json");
 var requireAgentKey = !string.Equals(GetArg(args, "--require-agent-key"), "false", StringComparison.OrdinalIgnoreCase);
+var portMin = int.TryParse(GetArg(args, "--discovery-port-min"), out var pmin) ? pmin : (int?)null;
+var portMax = int.TryParse(GetArg(args, "--discovery-port-max"), out var pmax) ? pmax : (int?)null;
+var gatewayPid = int.TryParse(GetArg(args, "--gateway-pid"), out var gpid) ? gpid : (int?)null;
 
 var profiles = new Dictionary<string, GuardProfileSpec>(StringComparer.OrdinalIgnoreCase);
 if (!string.IsNullOrWhiteSpace(profilesPath) && File.Exists(profilesPath))
@@ -28,6 +31,22 @@ await using var host = GuardHostFactory.Build(new GuardHostConfig
     AgentFacadeListenPort = listenPort,
     InternalLlamaSwapBaseUrl = internalUrl,
     RequireAgentInferenceApiKey = requireAgentKey,
+    DiscoveryPortRangeMin = portMin,
+    DiscoveryPortRangeMax = portMax,
+    ManagedGatewayPidProvider = gatewayPid.HasValue
+        ? () => gatewayPid
+        : () =>
+        {
+            if (Uri.TryCreate(internalUrl, UriKind.Absolute, out var u) && u.Port > 0)
+            {
+                var listeners = LocalLLMManager.Guard.Service.Discovery.WindowsTcpPortTable.GetAllListeningTcpPorts();
+                foreach (var l in listeners)
+                {
+                    if (l.Port == u.Port) return l.ProcessId;
+                }
+            }
+            return null;
+        },
     Profiles = profiles
 });
 

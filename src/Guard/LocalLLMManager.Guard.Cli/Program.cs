@@ -24,7 +24,7 @@ public static class GuardCliEntrypoint
         }
 
         var verb = args[0].Trim().ToLowerInvariant();
-        var pipe = GetArg(args, "--pipe") ?? "LocalLLMManager.Guard.Control.Isolated";
+        var pipe = GetArg(args, "--pipe") ?? GuardPipeClient.DefaultProductionPipeName;
         var target = GetArg(args, "--target");
         var idempotency = GetArg(args, "--idempotency") ?? Guid.NewGuid().ToString("N");
         var reason = GetArg(args, "--reason");

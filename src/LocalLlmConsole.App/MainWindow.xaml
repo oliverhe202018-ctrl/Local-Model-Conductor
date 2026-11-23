@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:LocalLlmConsole"
         xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
-        Title="llama.cpp Windows Manager v3.0.0" MinWidth="900" MinHeight="600" Width="1200" Height="780"
+        Title="Local Model Conductor v3.2.0" MinWidth="900" MinHeight="600" Width="1200" Height="780"
         WindowStartupLocation="CenterScreen"
         WindowStyle="None" ResizeMode="CanResize"
         Background="{DynamicResource AppBack}"
@@ -47,7 +47,8 @@
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center"/>
           </Button>
-          <TextBlock Text="llama.cpp Windows Manager"
+          <TextBlock x:Name="AppTitleText"
+                     Text="Local Model Conductor"
                      Foreground="{DynamicResource TextMain}"
                      FontSize="13.5"
                      FontWeight="SemiBold"
@@ -58,7 +59,7 @@
                   CornerRadius="4"
                   VerticalAlignment="Center">
             <TextBlock x:Name="AppVersionText"
-                       Text="v3.0.0"
+                       Text="v3.2.0"
                        Foreground="{DynamicResource TextMuted}"
                        FontSize="10.5"
                        FontWeight="SemiBold"/>

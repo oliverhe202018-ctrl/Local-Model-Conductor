@@ -113,7 +113,8 @@ public sealed class AppReleaseManifestVerifier
         }
         if (!string.Equals(manifest.SigningKeyId, envelope.KeyId, StringComparison.Ordinal))
             throw new InvalidOperationException("Release manifest and detached signature use different key IDs.");
-        if (!string.Equals(manifest.Repository, "alekk89/llama-cpp-windows-manager", StringComparison.Ordinal))
+        if (!string.Equals(manifest.Repository, "alekk89/llama-cpp-windows-manager", StringComparison.Ordinal)
+            && !string.Equals(manifest.Repository, AppUpdateService.RepositoryNameWithOwner, StringComparison.Ordinal))
             throw new InvalidOperationException("Release manifest names an unexpected repository.");
         if (!string.Equals(manifest.ReleaseChannel, "stable", StringComparison.Ordinal))
             throw new InvalidOperationException($"Release manifest uses unexpected channel '{manifest.ReleaseChannel}'.");

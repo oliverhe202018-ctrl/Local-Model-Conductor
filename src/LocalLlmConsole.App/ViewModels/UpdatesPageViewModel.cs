@@ -28,16 +28,21 @@ public sealed class UpdatesPageViewModel : ObservableViewModel
     }
 
     public bool HasAvailableUpdate => LatestUpdate is { IsAvailable: true };
+    public bool CanAutoInstall => LatestUpdate is { IsAvailable: true, CanAutoInstall: true };
     public string ActionText => HasAvailableUpdate
-        ? Localization.Loc.T("Nav.InstallUpdate")
+        ? (CanAutoInstall ? Localization.Loc.T("Nav.InstallUpdate") : Localization.Loc.T("Updates.OpenReleasePageButton"))
         : Localization.Loc.T("Nav.CheckForUpdates");
     public string NavigationText => ActionText;
 
     public string StatusText => LatestUpdate is null
         ? Localization.Loc.T("Updates.NoCheckYet")
         : LatestUpdate.IsAvailable
-            ? Localization.Loc.T("Updates.Available", LatestUpdate.CurrentVersion, LatestUpdate.LatestVersion)
-            : Localization.Loc.T("Updates.NoUpdatesAvailable", LatestUpdate.CurrentVersion);
+            ? (CanAutoInstall
+                ? Localization.Loc.T("Updates.Available", LatestUpdate.CurrentVersion, LatestUpdate.LatestVersion)
+                : Localization.Loc.T("Updates.InstallerAvailable", LatestUpdate.CurrentVersion, LatestUpdate.LatestVersion))
+            : LatestUpdate.ReleaseName.Contains("No official release", StringComparison.OrdinalIgnoreCase) || LatestUpdate.ReleaseName.Contains("No GitHub release feed", StringComparison.OrdinalIgnoreCase)
+                ? Localization.Loc.T("Updates.NoReleasePublished", LatestUpdate.CurrentVersion)
+                : Localization.Loc.T("Updates.NoUpdatesAvailable", LatestUpdate.CurrentVersion);
 
     public string StatusDetails => $"{StatusText}\n{Localization.Loc.T("Updates.RepositoryLabel")}: {AppUpdateService.RepositoryUrl}";
 

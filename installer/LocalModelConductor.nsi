@@ -10,7 +10,9 @@ RequestExecutionLevel user
 
 !define PRODUCT_NAME "Local Model Conductor"
 !define PRODUCT_NAME_ZH "本地模型调度台"
-!define PRODUCT_VERSION "3.0.0"
+!ifndef PRODUCT_VERSION
+  !define PRODUCT_VERSION "3.2.0"
+!endif
 !define PRODUCT_PUBLISHER "oliverhe202018-ctrl"
 !define PRODUCT_WEB_SITE "https://github.com/oliverhe202018-ctrl/Local-Model-Conductor"
 !define PRODUCT_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\LocalModelConductor"

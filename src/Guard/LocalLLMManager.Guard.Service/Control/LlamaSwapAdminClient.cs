@@ -45,7 +45,7 @@ public sealed class LlamaSwapAdminClient : IDisposable
             AllowAutoRedirect = false,
             ConnectTimeout = TimeSpan.FromSeconds(3)
         };
-        _http = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(45) };
+        _http = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(180) };
 
         var sseHandler = new SocketsHttpHandler
         {

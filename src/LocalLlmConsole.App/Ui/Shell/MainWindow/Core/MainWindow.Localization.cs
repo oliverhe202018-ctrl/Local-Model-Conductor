@@ -1,53 +1,35 @@
-using System.Windows;
+using System.Diagnostics;
+using System.Globalization;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Media;
-using Forms = System.Windows.Forms;
-using WpfApplication = System.Windows.Application;
-using WpfBinding = System.Windows.Data.Binding;
-using WpfButton = System.Windows.Controls.Button;
-using WpfCheckBox = System.Windows.Controls.CheckBox;
-using WpfComboBox = System.Windows.Controls.ComboBox;
-using WpfProgressBar = System.Windows.Controls.ProgressBar;
-using WpfTextBox = System.Windows.Controls.TextBox;
+
 namespace LocalLlmConsole;
 
 public partial class MainWindow
 {
     private void PopulateLanguageSelector()
     {
-        var languages = Localization.Loc.AvailableLanguages()
+        LanguageCombo.ItemsSource = Localization.Loc.AvailableLanguages()
             .Select(code => new LanguageItem(code, Localization.Loc.LanguageDisplayName(code)))
             .ToList();
-        LanguageCombo.ItemsSource = languages;
         LanguageCombo.DisplayMemberPath = "Name";
         LanguageCombo.SelectedValuePath = "Code";
-        LanguageCombo.SelectedValue = Localization.Loc.CurrentLanguage;
+        LanguageCombo.SelectedValue = Localization.Loc.NormalizeLanguageCode(_settings.UiCulture);
     }
 
-    sealed class LanguageItem
-    {
-        public string Code { get; }
-        public string Name { get; }
-        public LanguageItem(string code, string name) => (Code, Name) = (code, name);
-        public override string ToString() => Name;
-    }
+    private sealed record LanguageItem(string Code, string Name) { public override string ToString() => Name; }
 
     private async void LanguageCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (LanguageCombo.SelectedValue is not string lang || lang == Localization.Loc.CurrentLanguage)
-            return;
+        if (LanguageCombo.SelectedValue is not string rawLang) return;
+        var normalized = Localization.Loc.NormalizeLanguageCode(rawLang);
+        if (normalized == Localization.Loc.CurrentLanguage && rawLang == _settings.UiCulture) return;
 
-        Localization.Loc.LoadLanguage(lang);
-        _settings = _settings with { UiCulture = lang };
-
+        Localization.Loc.LoadLanguage(rawLang);
+        _settings = _settings with { UiCulture = rawLang };
         ApplyLocalizedXamlStrings();
         RefreshCurrentPage();
         if (_stateStore is null) return;
-        try
-        {
-            await _stateStore.SaveAppSettingsAsync(_settings);
-        }
+        try { await _stateStore.SaveAppSettingsAsync(_settings); }
         catch (Exception ex)
         {
             Trace.TraceError($"Could not persist language selection: {ex}");
@@ -71,7 +53,6 @@ public partial class MainWindow
         System.Windows.Automation.AutomationProperties.SetHelpText(LanguageCombo, Localization.Loc.T("Status.Language"));
         System.Windows.Automation.AutomationProperties.SetName(AppStatusText, Localization.Loc.T("Status.CurrentActionLabel"));
 
-        // Navigation buttons
         OverviewNavButton.Content = Localization.Loc.T("Nav.Overview");
         ModelsNavButton.Content = Localization.Loc.T("Nav.Models");
         RuntimesNavButton.Content = Localization.Loc.T("Nav.Runtimes");
@@ -85,10 +66,8 @@ public partial class MainWindow
         UpdatesNavButton.Content = Localization.Loc.T("Nav.CheckForUpdates");
         HelpNavButton.Content = Localization.Loc.T("Nav.Help");
 
-        // Status panel
         CurrentStatusLabel.Text = Localization.Loc.T("Status.CurrentActionLabel");
-
-        // Title bar
+        AppTitleText.Text = Localization.Loc.T("App.Title");
         Title = $"{Localization.Loc.T("App.Title")} {AppVersionText.Text}";
 
         _trayProfileMenu?.Close();

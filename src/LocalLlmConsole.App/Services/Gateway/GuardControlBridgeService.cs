@@ -187,7 +187,7 @@ public sealed class GuardControlBridgeService
                 CallerRole = callerRole,
                 CallerId = $"{callerRole}:{Environment.UserName}",
                 TargetProfile = targetProfile,
-                TimeoutSeconds = 60
+                TimeoutSeconds = 180
             }, connectTimeoutMs: 4000, cancellationToken: linked.Token).ConfigureAwait(false);
 
             _lastSwitchTimeUtc = DateTimeOffset.UtcNow;

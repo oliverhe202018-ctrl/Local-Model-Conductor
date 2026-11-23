@@ -103,6 +103,7 @@ public sealed class AppSettingsUpdateService
             RequireApiKeyAuth = requireApiKeyAuth,
             ModelApiKey = requireApiKeyAuth ? preservedApiKey : "",
             ModelApiKeyBackup = preservedApiKey,
+            UiCulture = values.TryGetValue("uiCulture", out var langVal) ? AppPreferenceService.Language(langVal) : current.UiCulture,
             UiScalePercent = AppPreferenceService.ParseUiScalePercent(
                 V("uiScalePercent", current.UiScalePercent.ToString(CultureInfo.InvariantCulture)),
                 current.UiScalePercent),

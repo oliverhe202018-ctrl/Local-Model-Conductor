@@ -43,6 +43,7 @@ if (-not $makensis) {
         "C:\Program Files (x86)\NSIS\makensis.exe",
         "C:\Program Files\NSIS\makensis.exe",
         "C:\ProgramData\chocolatey\bin\makensis.exe",
+        "D:\project\本地模型计算\tools\nsis-3.13\Bin\makensis.exe",
         "D:\project\本地模型计算\tools\nsis-3.13\makensis.exe"
     )
     foreach ($cand in $searchLocations) {
@@ -160,8 +161,11 @@ if (-not $SkipInstaller) {
     Write-DistLog "Compiling NSIS installer using $makensis ..." "INFO"
     $nsiScript = Join-Path $RepoRoot "installer/LocalModelConductor.nsi"
 
+    $cleanVersion = ($Version -replace '^v', '')
+    $numericVersion = ($cleanVersion -split '-')[0]
     $nsisArgs = @(
         "/INPUTCHARSET", "UTF8",
+        "-DPRODUCT_VERSION=$numericVersion",
         "-DSOURCE_DIR=$fullDist",
         "-DOUTPUT_DIR=$fullRelease",
         "-DAPP_ICON=$iconPath",

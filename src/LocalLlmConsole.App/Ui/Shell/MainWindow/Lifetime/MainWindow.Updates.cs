@@ -28,7 +28,12 @@ public partial class MainWindow
     private async Task ShowUpdatesPrimaryActionAsync()
     {
         if (_viewModel.Updates.LatestUpdate is { IsAvailable: true } available)
-            await InstallAppUpdateAsync(available, confirm: true);
+        {
+            if (available.CanAutoInstall)
+                await InstallAppUpdateAsync(available, confirm: true);
+            else
+                _coreServices.App.ShellIntegration.OpenUrl(available.HtmlUrl);
+        }
         else
             await CheckForAppUpdatesAsync(manual: true);
     }

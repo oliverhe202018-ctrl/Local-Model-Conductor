@@ -9,8 +9,8 @@ namespace LocalLlmConsole;
 
 public partial class MainWindow
 {
-    private const string AppDisplayName = "llama.cpp Windows Manager";
-    private const string AppVersionLabel = "v3.0.0";
+    private const string AppDisplayName = "Local Model Conductor";
+    private const string AppVersionLabel = "v3.2.0";
 
     private readonly string _workspaceRoot;
     private readonly AppServiceFactory _serviceFactory;

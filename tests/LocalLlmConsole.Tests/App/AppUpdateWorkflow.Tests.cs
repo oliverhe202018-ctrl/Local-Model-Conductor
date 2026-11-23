@@ -14,12 +14,12 @@ public sealed class AppUpdateWorkflowTests : ManagerRegressionTestBase
     [Fact]
     public void AppUpdateServiceParsesGithubReleaseAndAsset()
     {
-        var release = System.Text.Json.Nodes.JsonNode.Parse("""
+        var release = System.Text.Json.Nodes.JsonNode.Parse($$"""
         {
           "tag_name": "v1.1.2",
           "name": "v1.1.2",
           "body": "Added update checks.",
-          "html_url": "https://github.com/alekk89/llama-cpp-windows-manager/releases/tag/v1.1.2",
+          "html_url": "{{AppUpdateService.ReleasesWebUrl}}/tag/v1.1.2",
           "assets": [
             { "name": "notes.txt", "browser_download_url": "https://example.invalid/notes.txt", "size": 10 },
             { "name": "LlamaCppWindowsManager-win-x64.zip", "browser_download_url": "https://example.invalid/app.zip", "size": 1234 },
@@ -250,9 +250,9 @@ public sealed class AppUpdateWorkflowTests : ManagerRegressionTestBase
 
         var update = await service.CheckLatestAsync(TestContext.Current.CancellationToken);
 
-        Assert.Equal("https://api.github.com/repos/alekk89/llama-cpp-windows-manager/releases/latest", handler.RequestUri?.ToString());
+        Assert.Equal($"{AppUpdateService.ReleaseApiUrl}/latest", handler.RequestUri?.ToString());
         Assert.False(update.IsAvailable);
-        Assert.Contains("No GitHub release feed", update.ReleaseNotes, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("No official release", update.ReleaseNotes, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

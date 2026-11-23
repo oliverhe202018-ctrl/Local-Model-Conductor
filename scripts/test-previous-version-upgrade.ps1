@@ -38,6 +38,7 @@ $PreviousInstaller = Join-Path $TestRoot $Baseline.installer.name
 $ExpectedRoot = [System.IO.Path]::GetFullPath($TestRoot).TrimEnd('\') + '\'
 $oldWorkspaceVariable = $env:LLAMA_CPP_WINDOWS_MANAGER_WORKSPACE
 $upgradeFailed = $false
+$candidateUninstalled = $false
 
 function Invoke-CheckedProcess {
   param([string] $FilePath, [string[]] $ArgumentList, [string] $Label, [string] $LogPath = "")
@@ -236,6 +237,7 @@ try {
 
   $uninstaller = Join-Path $InstallDir "unins000.exe"
   Invoke-CheckedProcess $uninstaller @("/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART") "Candidate uninstall"
+  $candidateUninstalled = $true
   if (-not (Test-Path -LiteralPath (Join-Path $ExternalData "external-preserve.canary"))) { throw "Uninstall removed external user data." }
   Write-Host "Pinned $($Baseline.tag) to candidate installer upgrade validation passed." -ForegroundColor Green
 }
@@ -260,7 +262,7 @@ finally {
   Stop-IsolatedManagers
   $cleanupUninstallFailed = $false
   $temporaryUninstaller = Join-Path $InstallDir "unins000.exe"
-  if (Test-Path -LiteralPath $temporaryUninstaller -PathType Leaf) {
+  if (-not $candidateUninstalled -and (Test-Path -LiteralPath $temporaryUninstaller -PathType Leaf)) {
     try {
       Invoke-CheckedProcess $temporaryUninstaller @("/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART") "Upgrade-test cleanup uninstall"
     } catch {
@@ -273,5 +275,8 @@ finally {
     Write-Warning "Preserving the temporary upgrade-test root and failure diagnostics: $resolved"
   } elseif (($resolved + '\').StartsWith($ExpectedRoot, [StringComparison]::OrdinalIgnoreCase) -and (Test-Path -LiteralPath $resolved)) {
     Remove-TestRootWithRetry $resolved
+  }
+  if (-not $upgradeFailed) {
+    $global:LASTEXITCODE = 0
   }
 }

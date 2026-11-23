@@ -254,6 +254,39 @@ public static class AppPreferenceService
     private static bool LocalizedEquals(string? value, string localizationKey)
         => string.Equals((value ?? "").Trim(), Loc.T(localizationKey).Trim(), StringComparison.CurrentCultureIgnoreCase);
 
+    public static string Language(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text) || LocalizedEquals(text, "Setting.LanguageAuto") || string.Equals(text, "auto", StringComparison.OrdinalIgnoreCase))
+            return "auto";
+
+        foreach (var code in Loc.AvailableLanguages())
+        {
+            if (string.Equals(text.Trim(), Loc.LanguageDisplayName(code).Trim(), StringComparison.OrdinalIgnoreCase))
+                return code;
+        }
+
+        return Loc.NormalizeLanguageCode(text);
+    }
+
+    public static string LanguageLabel(string text)
+    {
+        var code = (text ?? "").Trim();
+        if (string.IsNullOrWhiteSpace(code) || string.Equals(code, "auto", StringComparison.OrdinalIgnoreCase))
+            return Loc.T("Setting.LanguageAuto");
+
+        return Loc.LanguageDisplayName(code);
+    }
+
+    public static IEnumerable<string> LanguageOptions()
+    {
+        var options = new List<string> { Loc.T("Setting.LanguageAuto") };
+        foreach (var code in Loc.AvailableLanguages())
+        {
+            options.Add(Loc.LanguageDisplayName(code));
+        }
+        return options;
+    }
+
     public static string RuntimeHostForAccessMode(string accessMode)
         => ModelAccessPolicy.RuntimeHost(ModelAccessMode(accessMode));
 

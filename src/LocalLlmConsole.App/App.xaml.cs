@@ -30,11 +30,12 @@ public partial class App : System.Windows.Application
         }
 
         var skipSingleInstance = !string.IsNullOrWhiteSpace(guardOptions.ScreenshotOutputDirectory)
+            || !string.IsNullOrWhiteSpace(guardOptions.UiSwitchWorkflowOutputDirectory)
             || e.Args.Contains("--isolated-instance", StringComparer.OrdinalIgnoreCase);
 
         if (!skipSingleInstance && !_singleInstance.TryAcquire(SingleInstanceMutexName))
         {
-            _dialogs.Notify(null, "llama.cpp Windows Manager is already running.", "llama.cpp Windows Manager", MessageBoxImage.Information);
+            _dialogs.Notify(null, "Local Model Conductor is already running.", "Local Model Conductor", MessageBoxImage.Information);
             Shutdown();
             return;
         }
@@ -49,6 +50,27 @@ public partial class App : System.Windows.Application
                 try
                 {
                     await window.CaptureGuardWorkbenchScreenshotsAsync(guardOptions.ScreenshotOutputDirectory!);
+                }
+                finally
+                {
+                    Shutdown(0);
+                }
+            };
+        }
+        else if (!string.IsNullOrWhiteSpace(guardOptions.UiSwitchWorkflowOutputDirectory))
+        {
+            if (!e.Args.Contains("--allow-test-mode-switch", StringComparer.OrdinalIgnoreCase))
+            {
+                System.Diagnostics.Trace.TraceError("[SAFETY GATE] --execute-ui-switch-workflow requires explicit --allow-test-mode-switch to prevent accidental model unloads in production.");
+                Shutdown(2);
+                return;
+            }
+            window.ShowInTaskbar = false;
+            window.Loaded += async (_, _) =>
+            {
+                try
+                {
+                    await window.ExecuteGuardUiSwitchWorkflowAsync(guardOptions.UiSwitchWorkflowOutputDirectory!);
                 }
                 finally
                 {

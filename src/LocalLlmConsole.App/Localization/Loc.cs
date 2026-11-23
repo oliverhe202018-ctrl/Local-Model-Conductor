@@ -56,11 +56,11 @@ public static class Loc
     }
 
     /// <summary>Lookup with String.Format placeholders. {0}, {1}, etc.</summary>
-    public static string T(string key, params object[] args)
+    public static string T(string key, params object?[] args)
     {
         var snapshot = Volatile.Read(ref _snapshot);
         var template = Translate(snapshot, key);
-        return args.Length > 0 ? string.Format(snapshot.FormatCulture, template, args) : template;
+        return args.Length > 0 ? string.Format(snapshot.FormatCulture, template, args!) : template;
     }
 
 #if DEBUG
@@ -68,15 +68,37 @@ public static class Loc
     public static bool ShowMissingKeys { get; set; } = false;
 #endif
 
-    /// <summary>Load a language by code ("en", "bg", "de"). Falls back to English on any failure.</summary>
+    /// <summary>Auto-detects the active Windows system language.</summary>
+    public static string DetectSystemLanguage()
+    {
+        var culture = CultureInfo.CurrentUICulture;
+        var code = culture.TwoLetterISOLanguageName.ToLowerInvariant();
+        if (code == "zh" || culture.Name.StartsWith("zh", StringComparison.OrdinalIgnoreCase))
+            return "zh";
+        return AvailableLanguages().Contains(code, StringComparer.OrdinalIgnoreCase) ? code : "en";
+    }
+
+    /// <summary>Normalizes language codes such as "zh-CN", "en-US", "auto" into canonical resource codes ("zh", "en").</summary>
+    public static string NormalizeLanguageCode(string? languageCode)
+    {
+        if (string.IsNullOrWhiteSpace(languageCode) || string.Equals(languageCode, "auto", StringComparison.OrdinalIgnoreCase))
+            return DetectSystemLanguage();
+
+        var trimmed = languageCode.Trim().ToLowerInvariant();
+        if (trimmed is "zh-cn" or "zh-hans" or "zh-sg" or "zh-hk" or "zh-tw" || trimmed.StartsWith("zh-", StringComparison.OrdinalIgnoreCase))
+            return "zh";
+        if (trimmed is "en-us" or "en-gb" or "en-au" or "en-ca" || trimmed.StartsWith("en-", StringComparison.OrdinalIgnoreCase))
+            return "en";
+
+        return AvailableLanguages().Contains(trimmed, StringComparer.OrdinalIgnoreCase)
+            ? trimmed
+            : "en";
+    }
+
+    /// <summary>Load a language by code ("en", "zh-CN", "en-US", "bg", "de"). Falls back to English on any failure.</summary>
     public static void LoadLanguage(string languageCode)
     {
-        var requested = string.IsNullOrWhiteSpace(languageCode)
-            ? "en"
-            : languageCode.Trim().ToLowerInvariant();
-        var resolved = AvailableLanguages().Contains(requested, StringComparer.OrdinalIgnoreCase)
-            ? requested
-            : "en";
+        var resolved = NormalizeLanguageCode(languageCode);
 
         var strings = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         var fallback = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -91,11 +113,18 @@ public static class Loc
             strings.Clear();
         }
 
+        var formatCulture = resolved switch
+        {
+            "zh" => CultureInfo.GetCultureInfo("zh-CN"),
+            "en" => CultureInfo.GetCultureInfo("en-US"),
+            _ => CultureInfo.GetCultureInfo(resolved)
+        };
+
         Volatile.Write(
             ref _snapshot,
             new LocalizationSnapshot(
                 resolved,
-                CultureInfo.GetCultureInfo(resolved),
+                formatCulture,
                 strings,
                 fallback));
     }
@@ -146,7 +175,9 @@ public static class Loc
     /// <summary>Human-readable name for a language code (for the ComboBox).</summary>
     public static string LanguageDisplayName(string code) => code switch
     {
-        "en" => "English",
+        "auto" => "跟随系统 (Auto)",
+        "en" or "en-us" or "en-US" => "English (en-US)",
+        "zh" or "zh-cn" or "zh-CN" => "简体中文 (zh-CN)",
         "bg" => "Български",
         "de" => "Deutsch",
         "es" => "Español",
@@ -154,7 +185,6 @@ public static class Loc
         "ru" => "Русский",
         "ja" => "日本語",
         "pt" => "Português",
-        "zh" => "中文 (简体)",
         "it" => "Italiano",
         "tr" => "Türkçe",
         "fa" => "فارسی",

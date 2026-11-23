@@ -21,9 +21,13 @@ public sealed partial class AppUpdateService
         if (update.AssetName != PortableExeName || update.AssetSize <= 0 ||
             update.ChecksumAssetName != PortableExeName + ".sha256")
             throw AppUpdateVerificationException.Asset("Unsigned updates require the portable EXE and its SHA-256 companion.");
-        var prefix = RepositoryUrl + "/releases/download/" + update.LatestVersion + "/";
-        if (!IsReleaseAssetUrl(update.AssetUrl, prefix + PortableExeName) ||
-            !IsReleaseAssetUrl(update.ChecksumAssetUrl, prefix + PortableExeName + ".sha256"))
+        var prefixes = new[]
+        {
+            RepositoryUrl + "/releases/download/" + update.LatestVersion + "/",
+            "https://github.com/alekk89/llama-cpp-windows-manager/releases/download/" + update.LatestVersion + "/"
+        };
+        if (!prefixes.Any(prefix => IsReleaseAssetUrl(update.AssetUrl, prefix + PortableExeName)) ||
+            !prefixes.Any(prefix => IsReleaseAssetUrl(update.ChecksumAssetUrl, prefix + PortableExeName + ".sha256")))
             throw AppUpdateVerificationException.Trust("Unsigned updates must use HTTPS assets from the official repository and matching release tag.");
         if (!string.IsNullOrWhiteSpace(update.ExpectedSha256))
             throw AppUpdateVerificationException.Asset("Unsigned updates must verify the published SHA-256 companion file.");

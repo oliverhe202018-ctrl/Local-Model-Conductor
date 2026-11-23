@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using LocalLLMManager.Guard.Contracts;
+using LocalLlmConsole.Localization;
 using LocalLlmConsole.Services;
 using WpfButton = System.Windows.Controls.Button;
 using WpfCheckBox = System.Windows.Controls.CheckBox;
@@ -92,6 +93,13 @@ public sealed partial class GuardOperationsCenterPage
         root.Children.Add(BuildMultiModelCardsSection());
         root.Children.Add(BuildLiveTerminalSection());
 
+        System.Windows.Automation.AutomationProperties.SetAutomationId(_stateBadgeText, "StateBadgeText");
+        System.Windows.Automation.AutomationProperties.SetAutomationId(_endpointSummary, "EndpointSummaryText");
+        System.Windows.Automation.AutomationProperties.SetAutomationId(_modelInfoText, "ModelInfoText");
+        System.Windows.Automation.AutomationProperties.SetAutomationId(_gpuText, "GpuTelemetryText");
+        System.Windows.Automation.AutomationProperties.SetAutomationId(_ramCommitText, "RamCommitText");
+        System.Windows.Automation.AutomationProperties.SetAutomationId(_unlockFaultButton, "BtnUnlockFault");
+
         Content = new ScrollViewer
         {
             VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
@@ -108,12 +116,12 @@ public sealed partial class GuardOperationsCenterPage
         var left = new StackPanel();
         left.Children.Add(new TextBlock
         {
-            Text = "本地大模型统一运维中心 (External llama-swap v275 + Guard)",
+            Text = Loc.T("GuardCenter.Title"),
             FontSize = 18,
             FontWeight = FontWeights.SemiBold,
             Foreground = BrushOf("#F0F6FC")
         });
-        _endpointSummary.Text = $"固定 API: {GuardBackendOptions.Current.FixedGatewayBaseUrl}  |  固定模型 ID: {GuardBackendOptions.Current.FixedLogicalModelId}  |  桌面内置 Supervisor & Gateway 已永久隔离";
+        _endpointSummary.Text = Loc.T("GuardCenter.EndpointSummary", GuardBackendOptions.Current.FixedGatewayBaseUrl, GuardBackendOptions.Current.FixedLogicalModelId);
         _endpointSummary.FontSize = 12;
         _endpointSummary.Foreground = BrushOf("#8B949E");
         _endpointSummary.Margin = new Thickness(0, 4, 0, 0);
@@ -160,27 +168,27 @@ public sealed partial class GuardOperationsCenterPage
 
         var leftCard = CreateCard(margin: new Thickness(0, 0, 6, 0));
         var leftStack = new StackPanel();
-        leftStack.Children.Add(SectionHeading("运行总览 — 模型与固定路由"));
-        AddMetricRow(leftStack, "当前模型 / Profile:", _modelInfoText);
-        AddMetricRow(leftStack, "Runtime 版本:", _runtimeInfoText);
-        AddMetricRow(leftStack, "GGUF 完整路径:", _ggufPathText);
-        AddMetricRow(leftStack, "上下文长度:", _contextText);
-        AddMetricRow(leftStack, "活动 / 排队请求:", _queueText);
-        AddMetricRow(leftStack, "最近切换时间:", _lastSwitchText);
+        leftStack.Children.Add(SectionHeading(Loc.T("GuardCenter.Section.Overview")));
+        AddMetricRow(leftStack, Loc.T("GuardCenter.Metric.ModelInfo"), _modelInfoText);
+        AddMetricRow(leftStack, Loc.T("GuardCenter.Metric.RuntimeVersion"), _runtimeInfoText);
+        AddMetricRow(leftStack, Loc.T("GuardCenter.Metric.GgufPath"), _ggufPathText);
+        AddMetricRow(leftStack, Loc.T("GuardCenter.Metric.ContextLength"), _contextText);
+        AddMetricRow(leftStack, Loc.T("GuardCenter.Metric.QueueStatus"), _queueText);
+        AddMetricRow(leftStack, Loc.T("GuardCenter.Metric.LastSwitchTime"), _lastSwitchText);
         leftCard.Child = leftStack;
         Grid.SetColumn(leftCard, 0);
         grid.Children.Add(leftCard);
 
         var rightCard = CreateCard(margin: new Thickness(6, 0, 0, 0));
         var rightStack = new StackPanel();
-        rightStack.Children.Add(SectionHeading("实时硬件遥测 & 性能指标 (OS / nvidia-smi / Guard)"));
-        AddMetricRow(rightStack, "GPU 显存与利用率:", _gpuText);
-        AddMetricRow(rightStack, "RAM & Commit:", _ramCommitText);
-        AddMetricRow(rightStack, "TPS / Prefill / TTFT:", _perfMetricsText);
-        AddMetricRow(rightStack, "自动回滚状态:", _rollbackText);
+        rightStack.Children.Add(SectionHeading(Loc.T("GuardCenter.Section.HardwareTelemetry")));
+        AddMetricRow(rightStack, Loc.T("GuardCenter.Metric.GpuTelemetry"), _gpuText);
+        AddMetricRow(rightStack, Loc.T("GuardCenter.Metric.RamCommit"), _ramCommitText);
+        AddMetricRow(rightStack, Loc.T("GuardCenter.Metric.PerfMetrics"), _perfMetricsText);
+        AddMetricRow(rightStack, Loc.T("GuardCenter.Metric.RollbackStatus"), _rollbackText);
 
         var progressRow = new DockPanel { Margin = new Thickness(0, 6, 0, 2) };
-        var progLabel = new TextBlock { Text = "模型加载进度:", Foreground = BrushOf("#8B949E"), FontSize = 12, Width = 132 };
+        var progLabel = new TextBlock { Text = Loc.T("GuardCenter.Metric.LoadingProgress"), Foreground = BrushOf("#8B949E"), FontSize = 12, Width = 132 };
         DockPanel.SetDock(progLabel, Dock.Left);
         _loadingPctText.Foreground = BrushOf("#7EE787");
         _loadingPctText.FontWeight = FontWeights.Bold;
@@ -207,11 +215,13 @@ public sealed partial class GuardOperationsCenterPage
     {
         var card = CreateCard();
         var stack = new StackPanel();
-        stack.Children.Add(SectionHeading("操作控制中心 — 完整 8 阶段生命周期（单一 Guard 控制入口）"));
+        stack.Children.Add(SectionHeading(Loc.T("GuardCenter.Section.LifecycleControl")));
 
         var stagesPanel = new WrapPanel { Margin = new Thickness(0, 2, 0, 10) };
         for (int i = 0; i < GuardControlBridgeService.LifecycleStages.Length; i++)
         {
+            var stageKey = $"GuardCenter.Stage.{i + 1}";
+            var stageName = Loc.T(stageKey);
             var pill = new Border
             {
                 Background = BrushOf("#1C2430"),
@@ -220,7 +230,7 @@ public sealed partial class GuardOperationsCenterPage
                 Margin = new Thickness(0, 0, 6, 4),
                 Child = new TextBlock
                 {
-                    Text = $"{i + 1}. {GuardControlBridgeService.LifecycleStages[i]}",
+                    Text = $"{i + 1}. {stageName}",
                     FontSize = 11.5,
                     Foreground = BrushOf("#8B949E")
                 }
@@ -237,17 +247,17 @@ public sealed partial class GuardOperationsCenterPage
         stack.Children.Add(_failureReasonText);
 
         var buttons = new WrapPanel();
-        buttons.Children.Add(CreateActionButton("刷新状态", "#21262D", "#E6EDF3", () => _ = _actions.RefreshAsync(), isMutating: false));
-        buttons.Children.Add(CreateActionButton("暂停推理", "#2D333B", "#E6EDF3", () => _ = _actions.PauseAsync(), isMutating: true));
-        buttons.Children.Add(CreateActionButton("恢复推理", "#1F6FEB", "#FFFFFF", () => _ = _actions.ResumeAsync(), isMutating: true));
-        buttons.Children.Add(CreateActionButton("安全卸载", "#492323", "#FFA198", () => _ = _actions.UnloadAsync(), isMutating: true));
-        buttons.Children.Add(CreateActionButton("取消等待", "#2D333B", "#D2A8FF", () => _actions.CancelWait(), isMutating: false));
-        buttons.Children.Add(CreateActionButton("回滚健康基线", "#3A2C0F", "#F2CC60", () => _ = _actions.RollbackAsync(), isMutating: true));
-        _unlockFaultButton = CreateActionButton("人工解除故障锁定", "#421519", "#FF7B72", () => _ = _actions.UnlockFaultAsync(), isMutating: false);
+        buttons.Children.Add(CreateActionButton(Loc.T("GuardCenter.Action.Refresh"), "#21262D", "#E6EDF3", () => _ = _actions.RefreshAsync(), isMutating: false));
+        buttons.Children.Add(CreateActionButton(Loc.T("GuardCenter.Action.Pause"), "#2D333B", "#E6EDF3", () => _ = _actions.PauseAsync(), isMutating: true));
+        buttons.Children.Add(CreateActionButton(Loc.T("GuardCenter.Action.Resume"), "#1F6FEB", "#FFFFFF", () => _ = _actions.ResumeAsync(), isMutating: true));
+        buttons.Children.Add(CreateActionButton(Loc.T("GuardCenter.Action.Unload"), "#492323", "#FFA198", () => _ = _actions.UnloadAsync(), isMutating: true));
+        buttons.Children.Add(CreateActionButton(Loc.T("GuardCenter.Action.CancelWait"), "#2D333B", "#D2A8FF", () => _actions.CancelWait(), isMutating: false));
+        buttons.Children.Add(CreateActionButton(Loc.T("GuardCenter.Action.Rollback"), "#3A2C0F", "#F2CC60", () => _ = _actions.RollbackAsync(), isMutating: true));
+        _unlockFaultButton = CreateActionButton(Loc.T("GuardCenter.Action.UnlockFault"), "#421519", "#FF7B72", () => _ = _actions.UnlockFaultAsync(), isMutating: false);
         _unlockFaultButton.IsEnabled = false;
         buttons.Children.Add(_unlockFaultButton);
-        buttons.Children.Add(CreateActionButton("模型资产 & 参数编辑 →", "#16263A", "#79C0FF", _actions.NavigateToModels, isMutating: false));
-        buttons.Children.Add(CreateActionButton("多 Runtime 注册表 →", "#16263A", "#79C0FF", _actions.NavigateToRuntimes, isMutating: false));
+        buttons.Children.Add(CreateActionButton(Loc.T("GuardCenter.Action.NavigateModels"), "#16263A", "#79C0FF", _actions.NavigateToModels, isMutating: false));
+        buttons.Children.Add(CreateActionButton(Loc.T("GuardCenter.Action.NavigateRuntimes"), "#16263A", "#79C0FF", _actions.NavigateToRuntimes, isMutating: false));
 
         stack.Children.Add(buttons);
         card.Child = stack;

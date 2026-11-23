@@ -10,7 +10,8 @@ public sealed record GuardBackendOptions(
     string FixedGatewayBaseUrl,
     string FixedLogicalModelId,
     string? WorkspaceOverride,
-    string? ScreenshotOutputDirectory)
+    string? ScreenshotOutputDirectory,
+    string? UiSwitchWorkflowOutputDirectory = null)
 {
     public const string DefaultPipeName = "LocalLLMManager.Guard.Control.v1";
     public const string DefaultGatewayBaseUrl = "http://127.0.0.1:19000/v1";
@@ -38,13 +39,15 @@ public sealed record GuardBackendOptions(
         var workspace = ReadArg(args, "--workspace")
             ?? Environment.GetEnvironmentVariable("LLWM_WORKSPACE");
         var screenshots = ReadArg(args, "--capture-screenshots");
+        var uiSwitchWorkflow = ReadArg(args, "--execute-ui-switch-workflow");
 
         return new GuardBackendOptions(
             pipe.Trim(),
             gatewayUrl.Trim(),
             logicalModel.Trim(),
             string.IsNullOrWhiteSpace(workspace) ? null : workspace.Trim(),
-            string.IsNullOrWhiteSpace(screenshots) ? null : screenshots.Trim());
+            string.IsNullOrWhiteSpace(screenshots) ? null : screenshots.Trim(),
+            string.IsNullOrWhiteSpace(uiSwitchWorkflow) ? null : uiSwitchWorkflow.Trim());
     }
 
     private static string? ReadArg(string[] args, string flag)

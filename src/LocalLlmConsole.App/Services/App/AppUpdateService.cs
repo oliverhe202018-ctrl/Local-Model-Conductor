@@ -21,7 +21,8 @@ public sealed record AppUpdateInfo(
     string ManifestKeyId = "",
     string ManifestCommit = "",
     DateTimeOffset? ManifestExpiresAtUtc = null,
-    string ExpectedWindowsPublisher = "");
+    string ExpectedWindowsPublisher = "",
+    bool CanAutoInstall = true);
 
 public sealed record AppUpdateInstallPlan(
     string ScriptPath,
@@ -39,12 +40,17 @@ public sealed record InstalledUpdateNotice(string Version, string ReleaseName, s
 
 public sealed partial class AppUpdateService : IDisposable
 {
-    public const string RepositoryUrl = "https://github.com/alekk89/llama-cpp-windows-manager";
+    public const string RepositoryOwner = "oliverhe202018-ctrl";
+    public const string RepositoryName = "Local-Model-Conductor";
+    public const string RepositoryNameWithOwner = $"{RepositoryOwner}/{RepositoryName}";
+    public const string RepositoryUrl = $"https://github.com/{RepositoryNameWithOwner}";
+    public const string ReleaseApiUrl = $"https://api.github.com/repos/{RepositoryNameWithOwner}/releases";
+    public const string ReleasesWebUrl = $"{RepositoryUrl}/releases";
     public const string PortableExeName = "LlamaCppWindowsManager.exe";
     public const string ControlCliExeName = "llwmctl.exe";
     private const string ObsoletePortableExeName = "LlamaCppConsole.exe";
 
-    private const string UserAgent = "llama-cpp-windows-manager-updater";
+    private const string UserAgent = "Local-Model-Conductor-updater";
     private readonly HttpClient _http;
     private readonly Action<ProcessStartInfo> _startProcess;
     private readonly AppReleaseManifestVerifier _manifestVerifier;
@@ -122,15 +128,13 @@ public sealed partial class AppUpdateService : IDisposable
 
     private async Task<AppUpdateInfo> CheckLatestCoreAsync(CancellationToken cancellationToken)
     {
-        var releaseUrl = $"{RepositoryUrl.TrimEnd('/')}/releases/latest";
-        if (TryParseGitHubRepository(RepositoryUrl, out var owner, out var repo))
-            releaseUrl = $"https://api.github.com/repos/{Uri.EscapeDataString(owner)}/{Uri.EscapeDataString(repo)}/releases/latest";
+        var releaseUrl = $"{ReleaseApiUrl}/latest";
 
         using var request = new HttpRequestMessage(HttpMethod.Get, releaseUrl);
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
         using var response = await _http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
         if (response.StatusCode == HttpStatusCode.NotFound)
-            return AppUpdateReleaseParser.NoUpdateAvailable(_currentVersion, "No GitHub release feed is published yet.");
+            return AppUpdateReleaseParser.NoUpdateAvailable(_currentVersion, "No official release has been published yet.");
         response.EnsureSuccessStatusCode();
 
         var json = JsonNode.Parse(await response.Content.ReadAsStringAsync(cancellationToken))?.AsObject()
@@ -177,8 +181,8 @@ public sealed partial class AppUpdateService : IDisposable
         {
             throw AppUpdateVerificationException.Manifest("Verified stable-update trust metadata is incomplete.");
         }
-        if (string.IsNullOrWhiteSpace(update.AssetUrl))
-            throw AppUpdateVerificationException.Asset("The latest GitHub release does not include a portable llama.cpp Windows Manager asset.");
+        if (!update.CanAutoInstall || string.IsNullOrWhiteSpace(update.AssetUrl))
+            throw AppUpdateVerificationException.Asset("The latest GitHub release does not include a compatible portable Local Model Conductor asset. Refusing to overwrite application with incompatible installer.");
         var hasInlineChecksum = !string.IsNullOrWhiteSpace(update.ExpectedSha256);
         if (hasInlineChecksum && string.IsNullOrWhiteSpace(AppUpdateAssetVerifier.NormalizeSha256(update.ExpectedSha256)))
             throw AppUpdateVerificationException.Asset("The latest GitHub release includes an invalid SHA-256 checksum. Refusing to stage an unverifiable update.");
