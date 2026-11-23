@@ -1,6 +1,7 @@
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
+using LocalLlmConsole.Localization;
 using LocalLlmConsole.Services;
 
 namespace LocalLlmConsole;
@@ -11,7 +12,7 @@ public sealed partial class GuardOperationsCenterPage
     {
         var card = CreateCard(margin: new Thickness(0));
         var stack = new StackPanel();
-        stack.Children.Add(SectionHeading("实时终端与会话日志（自动脱敏 API Key / 严禁混入 Codex 与 Hermes 日志）"));
+        stack.Children.Add(SectionHeading(Loc.T("GuardCenter.Logs.Title")));
 
         var toolbar = new WrapPanel { Margin = new Thickness(0, 0, 0, 8), VerticalAlignment = VerticalAlignment.Center };
 
@@ -21,25 +22,25 @@ public sealed partial class GuardOperationsCenterPage
         _logSearchBox.Foreground = BrushOf("#E6EDF3");
         _logSearchBox.BorderBrush = BrushOf("#30363D");
         _logSearchBox.Margin = new Thickness(0, 0, 8, 4);
-        _logSearchBox.ToolTip = "搜索日志关键字";
+        _logSearchBox.ToolTip = Loc.T("GuardCenter.Logs.SearchTooltip");
         _logSearchBox.TextChanged += (_, _) => RefreshLogView();
         toolbar.Children.Add(_logSearchBox);
 
-        _pauseScrollCheck.Content = "暂停滚动";
+        _pauseScrollCheck.Content = Loc.T("GuardCenter.Logs.PauseScroll");
         _pauseScrollCheck.Foreground = BrushOf("#C9D1D9");
         _pauseScrollCheck.Margin = new Thickness(0, 4, 10, 4);
         _pauseScrollCheck.Checked += (_, _) => _logService.IsPaused = true;
         _pauseScrollCheck.Unchecked += (_, _) => { _logService.IsPaused = false; RefreshLogView(); };
         toolbar.Children.Add(_pauseScrollCheck);
 
-        _errorOnlyCheck.Content = "仅错误";
+        _errorOnlyCheck.Content = Loc.T("GuardCenter.Logs.ErrorsOnly");
         _errorOnlyCheck.Foreground = BrushOf("#FFA198");
         _errorOnlyCheck.Margin = new Thickness(0, 4, 10, 4);
         _errorOnlyCheck.Checked += (_, _) => RefreshLogView();
         _errorOnlyCheck.Unchecked += (_, _) => RefreshLogView();
         toolbar.Children.Add(_errorOnlyCheck);
 
-        _cudaOomCheck.Content = "仅 CUDA/OOM";
+        _cudaOomCheck.Content = Loc.T("GuardCenter.Logs.CudaOomOnly");
         _cudaOomCheck.Foreground = BrushOf("#F2CC60");
         _cudaOomCheck.Margin = new Thickness(0, 4, 10, 4);
         _cudaOomCheck.Checked += (_, _) => RefreshLogView();
@@ -48,7 +49,7 @@ public sealed partial class GuardOperationsCenterPage
 
         _modelFilterCombo.Width = 135;
         _modelFilterCombo.Margin = new Thickness(0, 0, 8, 4);
-        _modelFilterCombo.Items.Add("全部模型");
+        _modelFilterCombo.Items.Add(Loc.T("GuardCenter.Logs.AllModels"));
         _modelFilterCombo.Items.Add("cyber-tiel-mock");
         _modelFilterCombo.Items.Add("qwen-mock");
         _modelFilterCombo.Items.Add("inkling2-mock");
@@ -58,12 +59,12 @@ public sealed partial class GuardOperationsCenterPage
 
         _sessionFilterCombo.Width = 135;
         _sessionFilterCombo.Margin = new Thickness(0, 0, 8, 4);
-        _sessionFilterCombo.Items.Add("全部 Session");
+        _sessionFilterCombo.Items.Add(Loc.T("GuardCenter.Logs.AllSessions"));
         _sessionFilterCombo.SelectedIndex = 0;
         _sessionFilterCombo.SelectionChanged += (_, _) => RefreshLogView();
         toolbar.Children.Add(_sessionFilterCombo);
 
-        toolbar.Children.Add(CreateActionButton("导出脱敏日志", "#16263A", "#79C0FF", () =>
+        toolbar.Children.Add(CreateActionButton(Loc.T("GuardCenter.Logs.ExportButton"), "#16263A", "#79C0FF", () =>
         {
             var exportPath = Path.Combine(
                 Path.GetTempPath(),

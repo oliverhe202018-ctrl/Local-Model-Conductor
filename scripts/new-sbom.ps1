@@ -41,14 +41,14 @@ function ConvertTo-SpdxId {
 }
 
 $created = [DateTimeOffset]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ")
-$documentNamespace = "https://github.com/alekk89/llama-cpp-windows-manager/sbom/$Version/$([Guid]::NewGuid().ToString('N'))"
-$rootId = "SPDXRef-Package-LlamaCppWindowsManager"
+$documentNamespace = "https://github.com/oliverhe202018-ctrl/Local-Model-Conductor/sbom/$Version/$([Guid]::NewGuid().ToString('N'))"
+$rootId = "SPDXRef-Package-LocalModelConductor"
 $spdxPackages = @(
   [ordered]@{
     SPDXID = $rootId
-    name = "llama.cpp Windows Manager"
+    name = "Local Model Conductor"
     versionInfo = $Version
-    downloadLocation = "https://github.com/alekk89/llama-cpp-windows-manager"
+    downloadLocation = "https://github.com/oliverhe202018-ctrl/Local-Model-Conductor"
     filesAnalyzed = $false
     licenseConcluded = "MIT"
     licenseDeclared = "MIT"

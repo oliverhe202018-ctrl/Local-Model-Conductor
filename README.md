@@ -1,7 +1,7 @@
 # Local Model Conductor (LMC)
 
-> **One API. Safe Model Switching.**<br>
-> An open-source, unofficial community project providing a professional Windows desktop platform for local LLM runtime management, GPU resource scheduling, zero-downtime safe model switching, and unified API gateway control.
+> **One API. Safe Model Switching.**  
+> A professional Windows desktop platform for local LLM runtime management, GPU resource scheduling, zero-downtime safe model switching, and unified API gateway control.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Platform: Windows x64](https://img.shields.io/badge/Platform-Windows%20x64-0078D6.svg)](https://microsoft.com/windows)
@@ -41,9 +41,6 @@
 ---
 
 ## 🚀 Installation & Getting Started
-
-> [!NOTE]
-> **Release Status:** The repository currently provides public open-source code and automated build pipelines. Official pre-built installer packages will be **available after the first official release (v3.0.0)**.
 
 ### Method 1: PowerShell One-Click Install (Recommended)
 Run in Windows PowerShell (No Administrator elevation required):
@@ -86,15 +83,6 @@ llwmctl logs audit
 
 ---
 
-## 📚 Documentation
-
-- [DEVELOPMENT.md](docs/DEVELOPMENT.md) — Contributor, development, and testing guide.
-- [ARCHITECTURE.md](docs/ARCHITECTURE.md) — System architecture and component boundaries.
-- [CONTROL_API.md](docs/CONTROL_API.md) — Guard IPC and Control API specification.
-- [INSTALLER.md](docs/INSTALLER.md) — Installation, packaging, and upgrade lifecycle.
-
----
-
 ## 🤝 Upstream & Acknowledgements
 
 Local Model Conductor is a controlled fork and architectural evolution derived from:
@@ -106,4 +94,4 @@ Local Model Conductor is a controlled fork and architectural evolution derived f
 
 ## 📄 License
 
-Local Model Conductor is released under the [MIT License](LICENSE). Third-party runtime and component notices are documented in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) and `sbom.spdx.json` (distributed with release packages).
+Local Model Conductor is released under the [MIT License](LICENSE). Third-party runtime and component notices are documented in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) and [sbom.spdx.json](sbom.spdx.json).

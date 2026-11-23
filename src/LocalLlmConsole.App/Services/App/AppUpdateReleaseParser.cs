@@ -17,18 +17,20 @@ public static class AppUpdateReleaseParser
         var checksum = SelectChecksumAsset(assets, asset.Name);
         var latest = NormalizeVersion(latestVersion);
         var current = NormalizeVersion(currentVersion);
+        var canAutoInstall = !string.IsNullOrWhiteSpace(asset.Url) && !string.IsNullOrWhiteSpace(asset.Name);
         return new AppUpdateInfo(
             IsVersionNewer(latest, current),
             VersionLabel(currentVersion),
             VersionLabel(latestVersion),
             FirstNonBlank(release["name"]?.ToString(), VersionLabel(latestVersion)),
             release["body"]?.ToString() ?? "",
-            release["html_url"]?.ToString() ?? AppUpdateService.RepositoryUrl,
+            release["html_url"]?.ToString() ?? AppUpdateService.ReleasesWebUrl,
             asset.Name,
             asset.Url,
             asset.Size,
             checksum.Name,
-            checksum.Url);
+            checksum.Url,
+            CanAutoInstall: canAutoInstall);
     }
 
     public static AppUpdateInfo ParseVerifiedLatestRelease(
@@ -49,13 +51,14 @@ public static class AppUpdateReleaseParser
         }
 
         var selected = SelectVerifiedPortableAsset(release["assets"]?.AsArray(), manifest.Artifacts ?? []);
+        var canAutoInstall = !string.IsNullOrWhiteSpace(selected.Url) && !string.IsNullOrWhiteSpace(selected.Asset.Name);
         return new AppUpdateInfo(
             IsVersionNewer(NormalizeVersion(latestVersion), NormalizeVersion(currentVersion)),
             VersionLabel(currentVersion),
             VersionLabel(latestVersion),
             FirstNonBlank(release["name"]?.ToString(), VersionLabel(latestVersion)),
             release["body"]?.ToString() ?? "",
-            release["html_url"]?.ToString() ?? AppUpdateService.RepositoryUrl,
+            release["html_url"]?.ToString() ?? AppUpdateService.ReleasesWebUrl,
             selected.Asset.Name,
             selected.Url,
             selected.Asset.Size,
@@ -65,11 +68,12 @@ public static class AppUpdateReleaseParser
             ManifestKeyId: manifest.SigningKeyId,
             ManifestCommit: manifest.Commit,
             ManifestExpiresAtUtc: manifest.ExpiresAtUtc,
-            ExpectedWindowsPublisher: manifest.ExpectedWindowsPublisher);
+            ExpectedWindowsPublisher: manifest.ExpectedWindowsPublisher,
+            CanAutoInstall: canAutoInstall);
     }
 
     public static AppUpdateInfo NoUpdateAvailable(string currentVersion, string message = "No updates are available.")
-        => new(false, VersionLabel(currentVersion), VersionLabel(currentVersion), message, message, AppUpdateService.RepositoryUrl, "", "", 0);
+        => new(false, VersionLabel(currentVersion), VersionLabel(currentVersion), message, message, AppUpdateService.ReleasesWebUrl, "", "", 0, CanAutoInstall: false);
 
     public static bool IsPortableExeName(string name)
         => PortableExeNames.Any(candidate => candidate.Equals(name, StringComparison.OrdinalIgnoreCase));
@@ -90,9 +94,13 @@ public static class AppUpdateReleaseParser
             .Select(name => candidates.FirstOrDefault(asset => asset.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
             .FirstOrDefault(asset => !string.IsNullOrWhiteSpace(asset.Name))
             is var exact && !string.IsNullOrWhiteSpace(exact.Name) ? exact
-            : candidates.FirstOrDefault(asset => asset.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) && asset.Name.Contains("win-x64", StringComparison.OrdinalIgnoreCase))
+            : candidates.FirstOrDefault(asset =>
+                asset.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) &&
+                asset.Name.Contains("win-x64", StringComparison.OrdinalIgnoreCase) &&
+                !asset.Name.Contains("setup", StringComparison.OrdinalIgnoreCase) &&
+                !asset.Name.Contains("installer", StringComparison.OrdinalIgnoreCase))
                 is var zip && !string.IsNullOrWhiteSpace(zip.Name) ? zip
-            : candidates.FirstOrDefault(asset => asset.Name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase));
+            : ("", "", 0);
     }
 
     private static (ReleaseManifestArtifact Asset, string Url) SelectVerifiedPortableAsset(

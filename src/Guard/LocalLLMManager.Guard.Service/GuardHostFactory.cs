@@ -10,7 +10,7 @@ namespace LocalLLMManager.Guard.Service;
 public sealed class GuardHostConfig
 {
     public string StateDirectory { get; init; } = Path.Combine(AppContext.BaseDirectory, "guard_state");
-    public string PipeName { get; init; } = "LocalLLMManager.Guard.Control.Isolated";
+    public string PipeName { get; init; } = GuardPipeClient.DefaultProductionPipeName;
     public int AgentFacadeListenPort { get; init; } = 19250;
     public string InternalLlamaSwapBaseUrl { get; init; } = "http://127.0.0.1:19259";
     public bool RequireAgentInferenceApiKey { get; init; } = true;

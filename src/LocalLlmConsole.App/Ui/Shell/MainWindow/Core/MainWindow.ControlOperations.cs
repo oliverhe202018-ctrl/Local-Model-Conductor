@@ -75,7 +75,7 @@ public partial class MainWindow
         if (dryRun) return new { wouldClose = true, runningSessions = _sessions.Snapshots().Count(session => session.IsRunning) };
         if (!confirm) throw new InvalidOperationException("Application shutdown requires confirm=true.");
         Interlocked.Exchange(ref _controlShutdownConfirmed, 1);
-        _ = Task.Delay(200).ContinueWith(_ => Dispatcher.BeginInvoke(Close, DispatcherPriority.Normal));
+        Dispatcher.BeginInvoke(Close, DispatcherPriority.ApplicationIdle);
         return new { scheduled = true };
     }
 

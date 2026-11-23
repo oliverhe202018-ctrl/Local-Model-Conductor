@@ -5,7 +5,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$repository = "alekk89/llama-cpp-windows-manager"
+$repository = "oliverhe202018-ctrl/Local-Model-Conductor"
 $repoRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot ".."))
 if ($Tag -notmatch '^v\d+\.\d+\.\d+$') { throw "Expected a stable vX.Y.Z tag." }
 $version = $Tag.Substring(1)

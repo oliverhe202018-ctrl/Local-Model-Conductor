@@ -141,20 +141,6 @@ function Assert-HardwareCardSetting([string] $Cli, [bool] $Expected, [string] $L
   }
 }
 
-function Invoke-ManagerShutdown([string] $Cli, [Diagnostics.Process] $Process, [string] $Label) {
-  try {
-    Invoke-Ctl $Cli @("operations", "run", "app.shutdown", "--confirm", "--allow-self-stop", "--process-id", $Process.Id.ToString(), "--workspace", $Workspace) "$Label shutdown" | Out-Null
-  } catch {
-    # If the process terminates so quickly during verified shutdown that the local HTTP connection
-    # resets before reading the response, verify that the process indeed cleanly exited.
-    if (-not $Process.WaitForExit(5000)) {
-      throw
-    }
-    Write-Host "$Label completed fast shutdown (connection closed by process exit)."
-  }
-  if (-not $Process.WaitForExit(15000)) { throw "$Label did not complete its verified shutdown." }
-}
-
 function Stop-IsolatedManagers {
   $processes = @(Get-Process -Name LlamaCppWindowsManager -ErrorAction SilentlyContinue |
     Where-Object { $_.Path -and $_.Path.StartsWith($ExpectedRoot, [StringComparison]::OrdinalIgnoreCase) })
@@ -202,7 +188,8 @@ try {
   if ($previousVersion -notlike "$($Baseline.version)*") { throw "Previous executable has unexpected version '$previousVersion'." }
   Invoke-Ctl $previousCli @("settings", "set", "--set", "showOverviewHardware=false", "--workspace", $Workspace) "Previous Manager settings seed" | Out-Null
   Assert-HardwareCardSetting $previousCli $false "Previous Manager"
-  Invoke-ManagerShutdown $previousCli $oldProcess "Previous Manager"
+  Invoke-Ctl $previousCli @("operations", "run", "app.shutdown", "--confirm", "--allow-self-stop", "--process-id", $oldProcess.Id.ToString(), "--workspace", $Workspace) "Previous Manager shutdown" | Out-Null
+  if (-not $oldProcess.WaitForExit(15000)) { throw "Previous Manager did not complete its verified shutdown." }
 
   Set-Content -LiteralPath (Join-Path $Workspace "upgrade-preserve.canary") -Value "preserve" -Encoding ascii
   Set-Content -LiteralPath (Join-Path $ExternalData "external-preserve.canary") -Value "external" -Encoding ascii
@@ -226,13 +213,15 @@ try {
   $candidateVersion = [Diagnostics.FileVersionInfo]::GetVersionInfo($candidateApp).FileVersion
   if ($candidateVersion -like "$($Baseline.version)*") { throw "Candidate still has previous version '$candidateVersion'." }
   Assert-HardwareCardSetting $candidateCli $false "Candidate Manager after upgrade"
-  Invoke-ManagerShutdown $candidateCli $candidateProcess "Candidate Manager"
+  Invoke-Ctl $candidateCli @("operations", "run", "app.shutdown", "--confirm", "--allow-self-stop", "--process-id", $candidateProcess.Id.ToString(), "--workspace", $Workspace) "Candidate Manager shutdown" | Out-Null
+  if (-not $candidateProcess.WaitForExit(15000)) { throw "Candidate Manager did not complete its verified shutdown." }
 
   $candidateProcess = Start-IsolatedManager $candidateApp
   $candidateStatus = Wait-ForStatus $candidateCli
   Invoke-FirstContact $candidateCli $candidateProcess.Id "Restarted candidate Manager"
   Assert-HardwareCardSetting $candidateCli $false "Restarted candidate Manager"
-  Invoke-ManagerShutdown $candidateCli $candidateProcess "Restarted candidate Manager"
+  Invoke-Ctl $candidateCli @("operations", "run", "app.shutdown", "--confirm", "--allow-self-stop", "--process-id", $candidateProcess.Id.ToString(), "--workspace", $Workspace) "Restarted candidate Manager shutdown" | Out-Null
+  if (-not $candidateProcess.WaitForExit(15000)) { throw "Restarted candidate Manager did not complete its verified shutdown." }
 
   $uninstaller = Join-Path $InstallDir "unins000.exe"
   Invoke-CheckedProcess $uninstaller @("/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART") "Candidate uninstall"

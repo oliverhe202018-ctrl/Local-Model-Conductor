@@ -261,7 +261,7 @@ public sealed class ReleaseManifestTests : ManagerRegressionTestBase
             manifestVersion,
             $"v{manifestVersion}",
             new string('a', 40),
-            "alekk89/llama-cpp-windows-manager",
+            AppUpdateService.RepositoryNameWithOwner,
             "stable",
             ManifestTestNow.AddDays(-1),
             expiresAt ?? ManifestTestNow.AddDays(30),
@@ -290,7 +290,7 @@ public sealed class ReleaseManifestTests : ManagerRegressionTestBase
             ["tag_name"] = releaseTag,
             ["name"] = releaseTag,
             ["body"] = "Signed release notes",
-            ["html_url"] = $"https://github.com/alekk89/llama-cpp-windows-manager/releases/tag/{releaseTag}",
+            ["html_url"] = $"{AppUpdateService.ReleasesWebUrl}/tag/{releaseTag}",
             ["draft"] = false,
             ["prerelease"] = false,
             ["assets"] = new JsonArray(

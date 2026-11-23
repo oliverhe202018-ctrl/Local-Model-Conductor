@@ -11,6 +11,8 @@ namespace LocalLLMManager.Guard.Contracts;
 /// </summary>
 public sealed class GuardPipeClient
 {
+    public const string DefaultProductionPipeName = "LocalLLMManager.Guard.Control.v1";
+
     private readonly string _pipeName;
 
     public GuardPipeClient(string pipeName)
@@ -19,6 +21,8 @@ public sealed class GuardPipeClient
             throw new ArgumentException("Pipe name is required.", nameof(pipeName));
         _pipeName = pipeName;
     }
+
+    public GuardPipeClient() : this(DefaultProductionPipeName) { }
 
     public async Task<GuardCommandResponse> SendAsync(
         GuardCommandRequest request,

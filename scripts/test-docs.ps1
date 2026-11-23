@@ -11,8 +11,8 @@ $currentVersion = @($appProject.Project.PropertyGroup.Version | Where-Object { $
 $currentTag = "v$currentVersion"
 
 foreach ($file in $markdownFiles) {
-  $text = Get-Content -LiteralPath $file.FullName -Raw -Encoding utf8
-  $lines = @(Get-Content -LiteralPath $file.FullName -Encoding utf8)
+  $text = Get-Content -LiteralPath $file.FullName -Raw
+  $lines = @(Get-Content -LiteralPath $file.FullName)
   $relativePath = $file.FullName.Substring($RepoRoot.Length + 1)
   $insideFence = $false
   $previousHeadingLevel = 0

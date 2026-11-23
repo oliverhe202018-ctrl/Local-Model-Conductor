@@ -6,7 +6,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        Loc.LoadLanguage("en");
+        Loc.LoadLanguage(Loc.CurrentLanguage);
         AppVersionText.Text = AppVersionLabel;
         ApplyNavigationToggleState(collapsed: false);
         StateChanged += Window_StateChanged;
@@ -116,7 +116,7 @@ public partial class MainWindow : Window
                     SetStatus));
             await AppServices.UiLayouts.AttachShellAsync(this, PageHost, () => _viewModel.CurrentPage);
             RunBackground(SeedSuggestedLaunchProfilesInBackgroundAsync, Loc.T("Status.Failure.LaunchProfileSeeding"));
-            ShowOverview(refresh: false);
+            ShowOverview(refresh: true);
             await RefreshAllAsync();
             await RecoverActiveRuntimeSessionAsync();
             await StartModelGatewaySafelyAsync();

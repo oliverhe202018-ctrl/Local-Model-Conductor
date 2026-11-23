@@ -3,6 +3,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using LocalLLMManager.Guard.Contracts;
+using LocalLlmConsole.Localization;
 using LocalLlmConsole.Models;
 using LocalLlmConsole.Services;
 
@@ -69,18 +70,32 @@ public sealed class GuardOperationsCenterController
         _pollTimer.Start();
     }
 
+    public void InvalidatePage()
+    {
+        _page = null;
+    }
+
     public GuardOperationsCenterPage EnsurePage()
     {
         return _page ??= new GuardOperationsCenterPage(
             new GuardOperationsCenterActions(
                 RefreshAsync: RefreshAsync,
                 SwitchProfileAsync: SwitchProfileAsync,
-                PauseAsync: () => RunSimpleActionAsync("暂停推理", () => _bridge.PauseAsync()),
-                ResumeAsync: () => RunSimpleActionAsync("恢复推理", () => _bridge.ResumeAsync()),
-                UnloadAsync: () => RunSimpleActionAsync("安全卸载", () => _bridge.UnloadAsync()),
-                CancelWait: () => { _bridge.CancelPendingWait(); _setStatus("已取消等待（运行中请求不受影响）"); },
-                RollbackAsync: () => RunSimpleActionAsync("回滚健康基线", () => _bridge.RollbackToBaselineAsync()),
-                UnlockFaultAsync: () => RunSimpleActionAsync("解除故障锁定", () => _bridge.UnlockFaultAsync("Operator UI unlock")),
+                PauseAsync: () => RunSimpleActionAsync(Loc.T("GuardCenter.Action.Pause"), () => _bridge.PauseAsync()),
+                ResumeAsync: () => RunSimpleActionAsync(Loc.T("GuardCenter.Action.Resume"), () => _bridge.ResumeAsync()),
+                UnloadAsync: () => RunSimpleActionAsync(Loc.T("GuardCenter.Action.Unload"), () => _bridge.UnloadAsync()),
+                CancelWait: () => { _bridge.CancelPendingWait(); _setStatus(Loc.T("GuardCenter.Status.WaitCancelled")); },
+                RollbackAsync: () =>
+                {
+                    var confirm = System.Windows.MessageBox.Show(
+                        Loc.T("GuardCenter.Rollback.ConfirmMessage"),
+                        Loc.T("GuardCenter.Rollback.ConfirmTitle"),
+                        MessageBoxButton.YesNo,
+                        MessageBoxImage.Warning);
+                    if (confirm != MessageBoxResult.Yes) return Task.CompletedTask;
+                    return RunSimpleActionAsync(Loc.T("GuardCenter.Action.Rollback"), () => _bridge.RollbackToBaselineAsync());
+                },
+                UnlockFaultAsync: () => RunSimpleActionAsync(Loc.T("GuardCenter.Action.UnlockFault"), () => _bridge.UnlockFaultAsync("Operator UI unlock")),
                 ExportLogsAsync: ExportLogsAsync,
                 NavigateToModels: _showModels,
                 NavigateToRuntimes: _showRuntimes),
@@ -96,15 +111,15 @@ public sealed class GuardOperationsCenterController
         {
             _page.RenderSnapshot(snap, cards);
             _setStatus(snap.GuardOnline
-                ? $"Guard 在线 | 状态: {snap.DisplayState} | 激活 Profile: {snap.ActiveProfile ?? "无"}"
-                : "Guard 离线 — 自动进入只读观察模式 (READ_ONLY_OBSERVATION)");
+                ? Loc.T("GuardCenter.Status.Online", snap.DisplayState, snap.ActiveProfile ?? Loc.T("GuardCenter.Status.None"))
+                : Loc.T("GuardCenter.Status.Offline"));
         });
     }
 
     public async Task SwitchProfileAsync(string profileKey)
     {
-        _logService.Append("ui-switch", profileKey, "INFO", $"用户请求通过 Guard 切换 Profile -> {profileKey}");
-        _setStatus($"正在通过 Guard 切换至 {profileKey}...");
+        _logService.Append("ui-switch", profileKey, "INFO", $"User request via Guard switch profile -> {profileKey}");
+        _setStatus(Loc.T("GuardCenter.Status.Switching", profileKey));
         var resp = await _bridge.SwitchProfileAsync(profileKey, GuardCallerRole.UiClient);
         _logService.Append("ui-switch", profileKey, resp.Succeeded ? "INFO" : "ERROR",
             $"[{resp.Code}] {resp.Message} (State={resp.OperationalState}, Rollback={resp.RollbackOutcome})");
@@ -221,6 +236,128 @@ public sealed class GuardOperationsCenterController
         SaveVisualPng(window, Path.Combine(outDir, "phase4b_03_runtimes_registry.png"));
 
         showOverview();
+    }
+
+    public async Task ExecuteGuardUiSwitchWorkflowAsync(
+        FrameworkElement window,
+        string outDir)
+    {
+        System.IO.Directory.CreateDirectory(outDir);
+        var results = new Dictionary<string, object>();
+        var tStart = DateTimeOffset.UtcNow;
+        results["workflow_start_utc"] = tStart.ToString("o");
+
+        // 1. Initial State
+        await Task.Delay(1500);
+        await RefreshAsync();
+        await Task.Delay(500);
+        var path01 = System.IO.Path.Combine(outDir, "wpf_01_initial_model_a.png");
+        SaveVisualPng(window, path01);
+        results["screenshot_initial_a"] = path01;
+        
+        var snapA = await _bridge.PollStatusAsync();
+        results["initial_state"] = new Dictionary<string, object?> {
+            ["activeProfile"] = snapA.ActiveProfile,
+            ["operationalState"] = snapA.DisplayState.ToString(),
+            ["vramMiB"] = snapA.RawGuardStatus?.Telemetry?.GpuUsedVramMiB
+        };
+
+        // 2. Switch Profile to profile_qwen (Model B)
+        var swB = System.Diagnostics.Stopwatch.StartNew();
+        var respB = await _bridge.SwitchProfileAsync("profile_qwen", GuardCallerRole.UiClient);
+        swB.Stop();
+        results["switch_to_b"] = new Dictionary<string, object?> {
+            ["succeeded"] = respB.Succeeded,
+            ["code"] = respB.Code.ToString(),
+            ["message"] = respB.Message,
+            ["operationalState"] = respB.OperationalState.ToString(),
+            ["idempotencyKey"] = respB.IdempotencyKey,
+            ["elapsed_ms"] = swB.ElapsedMilliseconds
+        };
+
+        await Task.Delay(2000);
+        await RefreshAsync();
+        await Task.Delay(500);
+        var path02 = System.IO.Path.Combine(outDir, "wpf_02_switched_to_model_b.png");
+        SaveVisualPng(window, path02);
+        results["screenshot_model_b"] = path02;
+
+        var snapB = await _bridge.PollStatusAsync();
+        results["model_b_state"] = new Dictionary<string, object?> {
+            ["activeProfile"] = snapB.ActiveProfile,
+            ["operationalState"] = snapB.DisplayState.ToString(),
+            ["vramMiB"] = snapB.RawGuardStatus?.Telemetry?.GpuUsedVramMiB
+        };
+
+        // Smoke test inference on 19000 for Model B
+        try {
+            using var http = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(60) };
+            var chatPayload = System.Text.Json.JsonSerializer.Serialize(new {
+                model = "local-coder",
+                messages = new[] { new { role = "user", content = "Write 1 line of python" } },
+                max_tokens = 10,
+                temperature = 0.1
+            });
+            var content = new System.Net.Http.StringContent(chatPayload, System.Text.Encoding.UTF8, "application/json");
+            var infResp = await http.PostAsync("http://127.0.0.1:19000/v1/chat/completions", content);
+            results["model_b_inference_status"] = (int)infResp.StatusCode;
+            results["model_b_inference_body"] = await infResp.Content.ReadAsStringAsync();
+        } catch (Exception ex) {
+            results["model_b_inference_error"] = ex.Message;
+        }
+
+        // 3. Switch Profile back to profile_cyber (Model A)
+        var swA = System.Diagnostics.Stopwatch.StartNew();
+        var respA = await _bridge.SwitchProfileAsync("profile_cyber", GuardCallerRole.UiClient);
+        swA.Stop();
+        results["switch_to_a"] = new Dictionary<string, object?> {
+            ["succeeded"] = respA.Succeeded,
+            ["code"] = respA.Code.ToString(),
+            ["message"] = respA.Message,
+            ["operationalState"] = respA.OperationalState.ToString(),
+            ["idempotencyKey"] = respA.IdempotencyKey,
+            ["elapsed_ms"] = swA.ElapsedMilliseconds
+        };
+
+        await Task.Delay(2000);
+        await RefreshAsync();
+        await Task.Delay(500);
+        var path03 = System.IO.Path.Combine(outDir, "wpf_03_restored_model_a.png");
+        SaveVisualPng(window, path03);
+        results["screenshot_restored_a"] = path03;
+
+        var snapFinal = await _bridge.PollStatusAsync();
+        results["restored_model_a_state"] = new Dictionary<string, object?> {
+            ["activeProfile"] = snapFinal.ActiveProfile,
+            ["operationalState"] = snapFinal.DisplayState.ToString(),
+            ["vramMiB"] = snapFinal.RawGuardStatus?.Telemetry?.GpuUsedVramMiB
+        };
+
+        // Smoke test inference on 19000 for Model A
+        try {
+            using var http = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(60) };
+            var chatPayload = System.Text.Json.JsonSerializer.Serialize(new {
+                model = "local-coder",
+                messages = new[] { new { role = "user", content = "Write 1 line of python" } },
+                max_tokens = 10,
+                temperature = 0.1
+            });
+            var content = new System.Net.Http.StringContent(chatPayload, System.Text.Encoding.UTF8, "application/json");
+            var infResp = await http.PostAsync("http://127.0.0.1:19000/v1/chat/completions", content);
+            results["model_a_inference_status"] = (int)infResp.StatusCode;
+            results["model_a_inference_body"] = await infResp.Content.ReadAsStringAsync();
+        } catch (Exception ex) {
+            results["model_a_inference_error"] = ex.Message;
+        }
+
+        results["workflow_end_utc"] = DateTimeOffset.UtcNow.ToString("o");
+        results["workflow_verdict"] = (respB.Succeeded && respA.Succeeded && snapFinal.ActiveProfile == "profile_cyber") ? "PASS" : "FAIL";
+
+        var jsonOptions = new System.Text.Json.JsonSerializerOptions { WriteIndented = true };
+        var jsonText = System.Text.Json.JsonSerializer.Serialize(results, jsonOptions);
+        await System.IO.File.WriteAllTextAsync(System.IO.Path.Combine(outDir, "wpf_real_interaction_results.json"), jsonText);
+        var rootPath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(outDir) ?? outDir, "wpf_real_interaction_results.json");
+        await System.IO.File.WriteAllTextAsync(rootPath, jsonText);
     }
 
     public static void SaveVisualPng(FrameworkElement element, string filePath)

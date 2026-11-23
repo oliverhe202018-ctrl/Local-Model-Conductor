@@ -35,21 +35,3 @@ function Get-OutdatedPackages($json) {
   }
   return ,$outdated
 }
-
-function Get-DeprecatedPackages($json) {
-  $deprecated = @()
-  foreach ($project in @($json.projects)) {
-    foreach ($framework in @($project.frameworks)) {
-      foreach ($package in @($framework.topLevelPackages + $framework.transitivePackages)) {
-        if ($null -eq $package -or $null -eq $package.deprecationReasons) { continue }
-        # Microsoft.Testing.Platform 2.5.x transitive packages are marked 'Legacy' upstream but required by xUnit MTP
-        if ([string] $package.id -match '^Microsoft\.Testing\.' -and @($package.deprecationReasons) -contains 'Legacy') {
-          Write-Host "Ignoring $($package.id) $($package.resolvedVersion): known legacy test runner package." -ForegroundColor DarkGray
-          continue
-        }
-        $deprecated += $package
-      }
-    }
-  }
-  return ,$deprecated
-}

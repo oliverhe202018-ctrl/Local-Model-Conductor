@@ -22,7 +22,7 @@ flowchart TD
         RollbackMgr["Rollback & Health Monitor<br/>- Automatic rollback to LastKnownGoodProfile"]
         DPAPI["Windows DPAPI Credential Vault<br/>(CurrentUser Scope)"]
         StateDB["SQLite (WAL Mode) State Store"]
-
+        
         NamedPipe --> SafetyGate
         SafetyGate --> RollbackMgr
         RollbackMgr --> DPAPI

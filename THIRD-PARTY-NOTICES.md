@@ -5,42 +5,42 @@ The release includes the Microsoft .NET Runtime under `licenses/dotnet/`.
 
 ## Upstream Base and External Components
 
-- **llama-cpp-windows-manager** (v3.0.0, Commit 3b0c879) — MIT License
-  Copyright (c) 2024 alekk89
+- **llama-cpp-windows-manager** (v3.0.0, Commit 3b0c879) — MIT License  
+  Copyright (c) 2024 alekk89  
   <https://github.com/alekk89/llama-cpp-windows-manager>
 
-- **llama-swap** (v275) — MIT License
-  Copyright (c) mostlygeek
+- **llama-swap** (v275) — MIT License  
+  Copyright (c) mostlygeek  
   <https://github.com/mostlygeek/llama-swap>
 
-- **llama.cpp** — MIT License
-  Copyright (c) 2023-2025 Georgi Gerganov
+- **llama.cpp** — MIT License  
+  Copyright (c) 2023-2025 Georgi Gerganov  
   <https://github.com/ggerganov/llama.cpp>
 
 ## Directly and Transitively Referenced NuGet Packages
 
-- Microsoft.Data.Sqlite 10.0.15 and Microsoft.Data.Sqlite.Core 10.0.15 -- MIT
+- **Microsoft.Data.Sqlite 10.0.15** & **Microsoft.Data.Sqlite.Core 10.0.15** — MIT  
   Copyright (c) Microsoft Corporation. All rights reserved.
-- **System.Security.Cryptography.ProtectedData 10.0.15** — MIT
+- **System.Security.Cryptography.ProtectedData 10.0.15** — MIT  
   Copyright (c) Microsoft Corporation. All rights reserved.
-- **System.Management 10.0.0** & **System.CodeDom 10.0.0** — MIT
+- **System.Management 10.0.0** & **System.CodeDom 10.0.0** — MIT  
   Copyright (c) Microsoft Corporation. All rights reserved.
-- **Microsoft.Win32.Registry 5.0.0** & **System.Security.AccessControl 6.0.1** — MIT
+- **Microsoft.Win32.Registry 5.0.0** & **System.Security.AccessControl 6.0.1** — MIT  
   Copyright (c) Microsoft Corporation. All rights reserved.
-- **SQLitePCLRaw.bundle_e_sqlite3**, **SQLitePCLRaw.config.e_sqlite3**, **SQLitePCLRaw.core**, and **SQLitePCLRaw.provider.e_sqlite3 3.0.5** — Apache-2.0
+- **SQLitePCLRaw.bundle_e_sqlite3**, **SQLitePCLRaw.config.e_sqlite3**, **SQLitePCLRaw.core**, and **SQLitePCLRaw.provider.e_sqlite3 3.0.5** — Apache-2.0  
   Copyright 2014-2024 SourceGear, LLC.
-- **SQLite 3.53.4 (e_sqlite3.dll)** — Public Domain
+- **SQLite 3.53.4 (e_sqlite3.dll)** — Public Domain  
   <https://sqlite.org/copyright.html>
 
 ## Testing & Tooling Components (Build / Development only)
 
-- **xUnit.net 2.9.3 / xUnit v3 4.0.3** — Apache-2.0
+- **xUnit.net 2.9.3 / xUnit v3 4.0.3** — Apache-2.0  
   Copyright (c) .NET Foundation and Contributors.
-- **Microsoft.NET.Test.Sdk 17.13.0** & **Microsoft.Testing.Platform 2.5.2** — MIT
+- **Microsoft.NET.Test.Sdk 17.13.0** & **Microsoft.Testing.Platform 2.5.2** — MIT  
   Copyright (c) Microsoft Corporation.
-- **Mono.Cecil 0.11.6** — MIT
+- **Mono.Cecil 0.11.6** — MIT  
   Copyright (c) Jb Evain and Contributors.
-- **Newtonsoft.Json 13.0.1** — MIT
+- **Newtonsoft.Json 13.0.1** — MIT  
   Copyright (c) James Newton-King.
 
 ---
@@ -70,4 +70,3 @@ SOFTWARE.
 ### The Apache License, Version 2.0 (for SQLitePCLRaw and xUnit components)
 
 See `licenses/Apache-2.0.txt` for the full text of the Apache License, Version 2.0.
-

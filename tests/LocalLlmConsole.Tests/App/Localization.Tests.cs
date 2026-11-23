@@ -272,6 +272,39 @@ public sealed class LocalizationTests : ManagerRegressionTestBase
         }
     }
 
+    [Fact]
+    public void LanguageNormalizationAndSystemDetectionWorksReliably()
+    {
+        try
+        {
+            Assert.Equal("zh", Loc.NormalizeLanguageCode("zh-CN"));
+            Assert.Equal("zh", Loc.NormalizeLanguageCode("zh-Hans"));
+            Assert.Equal("zh", Loc.NormalizeLanguageCode("zh-Hans-CN"));
+            Assert.Equal("zh", Loc.NormalizeLanguageCode("ZH-CN"));
+            Assert.Equal("en", Loc.NormalizeLanguageCode("en-US"));
+            Assert.Equal("en", Loc.NormalizeLanguageCode("en-GB"));
+            Assert.Equal("en", Loc.NormalizeLanguageCode("EN-US"));
+            Assert.Equal("de", Loc.NormalizeLanguageCode("de"));
+            Assert.False(string.IsNullOrWhiteSpace(Loc.DetectSystemLanguage()));
+            Assert.False(string.IsNullOrWhiteSpace(Loc.NormalizeLanguageCode("auto")));
+
+            Loc.LoadLanguage("zh-CN");
+            Assert.Equal("zh", Loc.CurrentLanguage);
+            Assert.Equal("zh-CN", Loc.FormatCulture.Name);
+
+            Loc.LoadLanguage("en-US");
+            Assert.Equal("en", Loc.CurrentLanguage);
+            Assert.Equal("en-US", Loc.FormatCulture.Name);
+
+            Assert.Contains("zh-CN", Loc.LanguageDisplayName("zh-CN"));
+            Assert.Contains("en-US", Loc.LanguageDisplayName("en-US"));
+        }
+        finally
+        {
+            Loc.LoadLanguage("en");
+        }
+    }
+
     private static Dictionary<string, string> ReadLocalizationPack(string path)
     {
         using var document = JsonDocument.Parse(File.ReadAllText(path));

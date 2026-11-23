@@ -118,6 +118,7 @@ public partial class MainWindow
 
     private GuardOperationsCenterController? _guardCenter;
     private GuardOperationsCenterController EnsureGuardCenter() => _guardCenter ??= GuardOperationsCenterController.CreateForShell(this, BenchmarksNavButton, _workspaceRoot, () => _stateStore, SetStatus, ShowModels, ShowRuntimes, Dispatcher, () => _viewModel.CurrentPage == "Overview");
-    private void ShowGuardOperationsCenter(bool refresh) { var c = EnsureGuardCenter(); SetPage("Overview", Loc.T("PageSubtitle.Overview")); PageHost.Content = c.EnsurePage().Content; if (refresh) RunBackground(c.RefreshAsync, Loc.T("Status.Refreshing")); }
+    private void ShowGuardOperationsCenter(bool refresh, bool rebuild = false) { var c = EnsureGuardCenter(); if (rebuild) c.InvalidatePage(); SetPage("Overview", Loc.T("PageSubtitle.Overview")); PageHost.Content = c.EnsurePage().Content; if (refresh) RunBackground(c.RefreshAsync, Loc.T("Status.Refreshing")); }
     internal Task CaptureGuardWorkbenchScreenshotsAsync(string outDir) => EnsureGuardCenter().CaptureWorkbenchScreenshotsAsync(this, outDir, ShowModels, ShowRuntimes, () => ShowOverview(refresh: true));
+    internal Task ExecuteGuardUiSwitchWorkflowAsync(string outDir) => EnsureGuardCenter().ExecuteGuardUiSwitchWorkflowAsync(this, outDir);
 }

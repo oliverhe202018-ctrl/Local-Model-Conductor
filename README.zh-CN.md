@@ -1,6 +1,6 @@
 # 本地模型调度台 (Local Model Conductor / LMC)
 
-> **One API. Safe Model Switching.**<br>
+> **One API. Safe Model Switching.**  
 > 专为 Windows 开发者打造的本地大模型 Runtime 管理、GPU 显存安全调度与统一 API Gateway 平台。
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -39,9 +39,6 @@
 ---
 
 ## 🚀 三大安装与使用方式
-
-> [!NOTE]
-> **发行状态说明：** 当前仓库提供公开源代码与完整自动化构建管线。**正式安装包将在首次官方 Release (v3.0.0) 发布后开放。**
 
 ### 方式 A: PowerShell 一键安装（推荐普通用户）
 打开 Windows PowerShell（无需管理员权限），运行以下命令：
@@ -107,15 +104,6 @@ llwmctl logs audit
 
 ---
 
-## 📚 项目开发与技术文档
-
-- [DEVELOPMENT.md](docs/DEVELOPMENT.md) — 开发者贡献指南与测试流程。
-- [ARCHITECTURE.md](docs/ARCHITECTURE.md) — 系统架构与组件边界裁决。
-- [CONTROL_API.md](docs/CONTROL_API.md) — Guard 安全 IPC 与管控 API 规范。
-- [INSTALLER.md](docs/INSTALLER.md) — 安装、打包与升级生命周期。
-
----
-
 ## 🤝 上游致谢与派生说明 (Acknowledgements)
 
 Local Model Conductor（本地模型调度台）是一个基于优秀开源项目的受控 Fork 与架构进化版本：
@@ -127,4 +115,4 @@ Local Model Conductor（本地模型调度台）是一个基于优秀开源项�
 
 ## 📄 开源许可证
 
-本项目核心代码基于 [MIT 许可证](LICENSE) 发布。第三方依赖声明与组件清单详见 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) 与 `sbom.spdx.json`（随发行包附带）。
+本项目核心代码基于 [MIT 许可证](LICENSE) 发布。第三方依赖声明与组件清单详见 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) 与 [sbom.spdx.json](sbom.spdx.json)。

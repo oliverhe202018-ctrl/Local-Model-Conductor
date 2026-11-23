@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using LocalLLMManager.Guard.Contracts;
+using LocalLlmConsole.Localization;
 
 namespace LocalLlmConsole.Services;
 
@@ -33,13 +34,13 @@ public static class GuardProfileSyncService
         var warnings = new List<string>();
 
         if (settings.ContextSize < 512 || settings.ContextSize > 1_048_576)
-            errors.Add($"ctx-size ({settings.ContextSize}) 必须介于 512 与 1,048,576 之间。");
+            errors.Add(Loc.T("GuardCenter.Validation.ContextSize", settings.ContextSize));
         if (settings.ParallelSlots < 1 || settings.ParallelSlots > 32)
-            errors.Add($"Parallel Slots ({settings.ParallelSlots}) 必须介于 1 与 32 之间。");
+            errors.Add(Loc.T("GuardCenter.Validation.ParallelSlots", settings.ParallelSlots));
         if (settings.Port < 1024 || settings.Port > 65535)
-            errors.Add($"上游端口 ({settings.Port}) 不在合法范围 1024–65535 内。");
+            errors.Add(Loc.T("GuardCenter.Validation.Port", settings.Port));
         if (runtime is null || string.IsNullOrWhiteSpace(runtime.ExecutablePath))
-            errors.Add("必须先为该模型绑定一个已注册的 llama.cpp Runtime。");
+            errors.Add(Loc.T("GuardCenter.Validation.RuntimeRequired"));
 
         var fileBytes = File.Exists(model.ModelPath) ? new FileInfo(model.ModelPath).Length : 0L;
         var ggufMiB = fileBytes > 0 ? fileBytes / (1024.0 * 1024.0) : 14_000.0;
@@ -53,7 +54,7 @@ public static class GuardProfileSyncService
         var estCommit = Math.Round(estRam + kvMiB + 3072.0, 0);
 
         if (estVram > 15_200)
-            warnings.Add($"预计峰值显存 {estVram:F0} MiB 接近 16GB 单卡上限，建议开启 --n-cpu-moe 或降低 ctx-size。");
+            warnings.Add(Loc.T("GuardCenter.Validation.VramWarning", estVram));
 
         return new LaunchProfileValidationResult(errors.Count == 0, errors, warnings, estVram, estRam, estCommit);
     }
