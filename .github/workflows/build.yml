@@ -79,7 +79,7 @@ jobs:
     - name: Verify Distribution Packaging (Dry-Run Artifact Gate)
       shell: pwsh
       run: |
-        .\scripts\build-distribution.ps1 -Configuration Release -Version "v3.2.0-ci-pr10"
+        .\scripts\build-distribution.ps1 -Configuration Release -Version "v3.2.0"
 
     - name: Run Windows NSIS Installer Real End-to-End Acceptance Test
       shell: pwsh

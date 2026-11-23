@@ -161,9 +161,11 @@ if (-not $SkipInstaller) {
     Write-DistLog "Compiling NSIS installer using $makensis ..." "INFO"
     $nsiScript = Join-Path $RepoRoot "installer/LocalModelConductor.nsi"
 
+    $cleanVersion = ($Version -replace '^v', '')
+    $numericVersion = ($cleanVersion -split '-')[0]
     $nsisArgs = @(
         "/INPUTCHARSET", "UTF8",
-        "-DPRODUCT_VERSION=$($Version.TrimStart('v'))",
+        "-DPRODUCT_VERSION=$numericVersion",
         "-DSOURCE_DIR=$fullDist",
         "-DOUTPUT_DIR=$fullRelease",
         "-DAPP_ICON=$iconPath",
